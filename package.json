@@ -1,0 +1,21 @@
+{
+  "name": "node-red-contrib-openhab2",
+  "version": "0.0.1",
+  "description": "openhab home automation for node-red",
+  "dependencies": {
+	"request": "latest",
+	"@joeybaker/eventsource": "latest"
+  },
+  "author": "Peter De Mangelaere <peter.demangelaere@gmail.com>",
+  "keywords": [
+    "node-red", "openhab2"
+  ],
+  "node-red": {
+    "nodes": {
+      "openhab2": "77-openhab2.js"
+    }
+  },
+  "scripts": {
+  },
+  "license": "Apache-2.0"
+}
