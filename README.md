@@ -2,7 +2,7 @@
 ## Description
 
 Nodes facilitating the automation of *openHAB* ( <http://http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
-Test 123
+
 ## Installation
 
 ```
