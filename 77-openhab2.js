@@ -23,6 +23,12 @@ var request = require('request');
 module.exports = function(RED) {
 
 	
+	/**
+	* ====== openhab2-controller ================
+	* Holds the hostname and port of the  
+	* openHAB server
+	* ===========================================
+	*/
 	function OpenHABControllerNode(config) {
 		RED.nodes.createNode(this, config);
 		this.errorCount = 0;
@@ -59,69 +65,12 @@ module.exports = function(RED) {
 
     });
 	   	
-    /**
-	* ====== MIOS-OUT ======================
-	* Sends outgoing commands from
-	* messages received via node-red flows
-	* =======================================
-	*/
-	function OpenHABOut(config) {
-		RED.nodes.createNode(this, config);
-		this.name = config.name;
-		var openhabController = RED.nodes.getNode(config.controller);
-		var node = this;
-
-		
-		node.log('new OpenHABOut, config: ' + JSON.stringify(config));
-
-		this.on("input", function(msg) {
-			
-            var url = openhabController.getConnectionString() + "/rest/items/" + config.itemname;
-            
-			var command = (config.command && (config.command.length != 0)) ? config.command : msg.payload;
-			
-            if ( command != undefined )
-			{
-				if ( (msg.payload == "on") || (msg.payload == "1") || (msg.payload == 1) || (msg.payload == true) )
-					command = "ON";
-				else if ( (msg.payload == "off") || (msg.payload == "0") || (msg.payload == 0) || (msg.payload == false) )
-					command = "OFF";
-			}
-			else
-			{
-                node.status({fill:"red", shape: "ring", text: "no command specified"});
-				node.warn('onInput: no command specified');
-				return;
-			}
-
-            node.log("COMMAND = " + command);
-            request.post({url: url, body: command}, function(error, response, body) {
-        		if ( error ) {
-                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
-        			node.warn("request error '" +  + "' on '" + url + "'");
-        		}
-        		else if ( response.statusCode != 200 ) {
-                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
-        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-        		}
-        		else {
-                    node.status({fill:"green", shape: "ring", text: ""});
-        			
-        		}
-        	});
-		});
-		this.on("close", function() {
-			node.log('close');
-		});
-	}
-	//
-	RED.nodes.registerType("openhab2-out", OpenHABOut);
 	
 	/**
-	* ====== MIOS-IN ========================
+	* ====== openhab2-in ========================
 	* Handles incoming openhab2 events, injecting 
 	* json into node-red flows
-	* =======================================
+	* ===========================================
 	*/
 	function OpenHABIn(config) {
 		RED.nodes.createNode(this, config);
@@ -233,4 +182,63 @@ module.exports = function(RED) {
 	}
 	//
 	RED.nodes.registerType("openhab2-in", OpenHABIn);
+	
+	
+	/**
+	* ====== openhab2-out ===================
+	* Sends outgoing commands from
+	* messages received via node-red flows
+	* =======================================
+	*/
+	function OpenHABOut(config) {
+		RED.nodes.createNode(this, config);
+		this.name = config.name;
+		var openhabController = RED.nodes.getNode(config.controller);
+		var node = this;
+
+		
+		node.log('new OpenHABOut, config: ' + JSON.stringify(config));
+
+		this.on("input", function(msg) {
+			
+            var url = openhabController.getConnectionString() + "/rest/items/" + config.itemname;
+            
+			var command = (config.command && (config.command.length != 0)) ? config.command : msg.payload;
+			
+            if ( command != undefined )
+			{
+				if ( (msg.payload == "on") || (msg.payload == "1") || (msg.payload == 1) || (msg.payload == true) )
+					command = "ON";
+				else if ( (msg.payload == "off") || (msg.payload == "0") || (msg.payload == 0) || (msg.payload == false) )
+					command = "OFF";
+			}
+			else
+			{
+                node.status({fill:"red", shape: "ring", text: "no command specified"});
+				node.warn('onInput: no command specified');
+				return;
+			}
+
+            node.log("COMMAND = " + command);
+            request.post({url: url, body: command}, function(error, response, body) {
+        		if ( error ) {
+                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
+        			node.warn("request error '" +  + "' on '" + url + "'");
+        		}
+        		else if ( response.statusCode != 200 ) {
+                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
+        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+        		}
+        		else {
+                    node.status({fill:"green", shape: "ring", text: ""});
+        			
+        		}
+        	});
+		});
+		this.on("close", function() {
+			node.log('close');
+		});
+	}
+	//
+	RED.nodes.registerType("openhab2-out", OpenHABOut);
 } 

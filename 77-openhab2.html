@@ -76,15 +76,52 @@
     </div>
 </script>
 
+<script type="text/x-red" data-help-name="openhab2-controller">
+    <p>Registers the address of an openHAB controller.</p>
+	<p></p>
+	<b>Configuration</b>
+    <ul>
+        <li><b>Name :</b> Specify a name</li>
+        <li><b>openHAB host :</b> Specify the hostname or ip address of the openHAB server</li>
+        <li><b>openHAB port :</b> Specify the port of the openHAB server</li>
+   	 </ul>
+</script>
+
 <script type="text/x-red" data-help-name="openhab2-in">
-    <p>An openHAB input node
-    </p>
+    <p>Listens to state changes of a selected openHAB Item.</p>
+	<p></p>
+	<b>Configuration</b>
+    <ul>
+        <li><b>Name :</b> Optionally specify a name</li>
+        <li><b>Controller :</b> Select the openHAB controller</li>
+        <li><b>Item :</b>Select the Item to monitor</li>
+   	 </ul>
+	<p></p>
+	<b>Messages injected in NodeRED flows</b>
+    <ul>
+        <li><code>msg.payload</code> : the state of the selected item</li>
+        <li><code>msg.topic</code> : <code>"state"</code> or <code>"statechanged"</code></li>
+        <li><code>msg.item</code> : the item's itemname (not label)</li>
+   	 </ul>
 </script>
 
 
 <script type="text/x-red" data-help-name="openhab2-out">
-    <p>An openHAB output node 
-    </p>
+    <p>Sends commands to a selected openHAB Item.</p>
+    <p>E.g. "ON", "OFF", "REFRESH", ... </p>
+	<p></p>
+	<b>Configuration</b>
+    <ul>
+        <li><b>Name :</b> Optionally specify a name</li>
+        <li><b>Controller :</b> Select the openHAB controller</li>
+        <li><b>Item :</b> Select the Item to monitor</li>
+        <li><b>Command :</b> Optionally specify the command to send to the selected item. If specified, it overrides the command specified in the incoming message.</li>
+   	 </ul>
+	<p></p>
+	<b>Messages accepted by NodeRED flows</b>
+    <ul>
+        <li><code>msg.payload</code> : command to send to the selected item</li>
+   	 </ul>
 </script>
 
 <script type="text/javascript">
@@ -168,8 +205,8 @@
         color: '#00cc00',
         defaults: {
             name:      {value:""},
-		    controller:  {value:"", type:"openhab2-controller"},
-		    itemname:  {value:""},
+		    controller:  {value:"", type:"openhab2-controller", required:true},
+		    itemname:  {value:"", required:true},
 		    itemlabel: {value:""}
         },
         inputs: 0,
@@ -191,8 +228,8 @@
         color: '#00cc00',
         defaults: {
             name:      {value:""},
-		    controller:  {value:"", type:"openhab2-controller"},
-		    itemname:  {value:""},
+		    controller:  {value:"", type:"openhab2-controller", required:true},
+		    itemname:  {value:"", required:true},
 		    itemlabel: {value:""},
 		    command:  {value:""}
 		},
