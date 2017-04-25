@@ -2,7 +2,7 @@
 
   openHAB nodes for IBM's Node-Red
   https://github.com/pdmangel/node-red-contrib-openhab2
-  (c) 2016, Peter De Mangelaere <peter.demangelaere@gmail.com>
+  (c) 2017, Peter De Mangelaere <peter.demangelaere@gmail.com>
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -31,11 +31,8 @@ module.exports = function(RED) {
 	*/
 	function OpenHABControllerNode(config) {
 		RED.nodes.createNode(this, config);
-		this.errorCount = 0;
 
-		var node = this;
-
-		node.log("new OpenHABControllerNode, config: " + JSON.stringify(config));
+		// this controller node doesn't do anything; it merely serves as shared object for the openHAB server connection parameters
 		
 		this.getConnectionString = function() {
 			return "http://" + config.host + ":" + config.port;
@@ -44,7 +41,8 @@ module.exports = function(RED) {
 	}
     RED.nodes.registerType("openhab2-controller", OpenHABControllerNode);
 
-    // start a web service for enabling the node configuration ui to query available devices
+    // start a web service for enabling the node configuration ui to query for available openHAB items
+    
     RED.httpNode.get("/openhab2/items/:host/:port",function(req, res, next) {
     	
     	var controllerAddress = req.params.host + ":" + req.params.port;
@@ -82,15 +80,56 @@ module.exports = function(RED) {
 		
 		if ( itemName != undefined ) itemName = itemName.trim();
 		
-		node.log('OpenHABIn, config: ' + JSON.stringify(config));
+		//node.log('OpenHABIn, config: ' + JSON.stringify(config));
 
+		// starts an EventSource to listen to openHAB2's Server-Sent Events 'statechanged' for the selected Item
+		
 		function startEventSource() {
-			node.es = new EventSource(openhabController.getConnectionString() + "/rest/events?topics=smarthome/items/" + itemName + "/statechanged", {});
+			node.es= new EventSource(openhabController.getConnectionString() + "/rest/events?topics=smarthome/items/" + itemName + "/statechanged", {});
 			
-			node.es.onmessage = function(e) {
-			    node.log(e.data);
+			// handle the 'onopen' event
+			
+			node.es.onopen = function(event) {
+	            node.status({fill:"blue", shape: "ring", text: "?"});
+
+	            // get the current state of the Item
+	            var url = openhabController.getConnectionString() + "/rest/items/" + itemName;
+	            
+	            request.get(url, function(error, response, body) {
+	            	// handle communication errors
+	        		if ( error ) {
+	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
+	        			node.warn("request error '" +  + "' on '" + url + "'");
+	        		}
+	        		else if ( response.statusCode != 200 ) {
+	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
+	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+	        		}
+	        		else {
+	        			// update the node status with the Item's state
+			    		var payload = JSON.parse(body);
+			    		
+					    if ( payload.state == "ON" )
+					        node.status({fill:"green", shape: "dot", text: "state:" + payload.state});
+					    else if ( payload.state == "OFF" )
+					        node.status({fill:"green", shape: "ring", text: "state:" + payload.state});
+					    else
+					        node.status({fill:"blue", shape: "ring", text: "state:" + payload.state});
+
+					    // inject the state in the node-red flow
+					    var msgid = RED.util.generateId();
+			            node.send({_msgid:msgid, topic: "state", payload:payload.state, item: itemName});
+	        		}
+	           	});
+	       	};
+
+			// handle the 'onmessage' event
+			
+	       	node.es.onmessage = function(e) {
+			    //node.log(e.data);
 				try
 				{
+        			// update the node status with the Item's new state
 				    var msg = JSON.parse(e.data);
 				    var payload = JSON.parse(msg.payload);
 				    
@@ -101,47 +140,20 @@ module.exports = function(RED) {
 				    else
 				        node.status({fill:"blue", shape: "ring", text: "state:" + payload.value});
 
+				    // inject the state in the node-red flow
 				    var msgid = RED.util.generateId();
 		            node.send({_msgid:msgid, topic: "statechanged", payload:payload.value, item: itemName});
 				}
 				catch(e)
 				{
+					// report an unexpected error
 	                node.status({fill:"red", shape: "ring", text: "Unexpected Error : " + e.msg});
 					node.error("Unexpected Error : " + e.msg)
 				}
 				
 			};
 			
-			node.es.onopen = function(event) {
-	            node.status({fill:"blue", shape: "ring", text: "?"});
-
-	            var url = openhabController.getConnectionString() + "/rest/items/" + itemName;
-	            
-	            request.get(url, function(error, response, body) {
-	        		if ( error ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
-	        			node.warn("request error '" +  + "' on '" + url + "'");
-	        		}
-	        		else if ( response.statusCode != 200 ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
-	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-	        		}
-	        		else {
-			    		var payload = JSON.parse(body);
-			    		
-					    if ( payload.state == "ON" )
-					        node.status({fill:"green", shape: "dot", text: "state:" + payload.state});
-					    else if ( payload.state == "OFF" )
-					        node.status({fill:"green", shape: "ring", text: "state:" + payload.state});
-					    else
-					        node.status({fill:"blue", shape: "ring", text: "state:" + payload.state});
-
-					    var msgid = RED.util.generateId();
-			            node.send({_msgid:msgid, topic: "state", payload:payload.state, item: itemName});
-	        		}
-	           	});
-	       	};
-
+			// handle the 'onerror' event
 			
 	       	node.es.onerror = function(err) {
 				node.warn('ERROR ' +	JSON.stringify(err));
@@ -150,20 +162,26 @@ module.exports = function(RED) {
 				{
 					node.status({fill:"red", shape: "dot", text: "Connection Status: " + err.status});
 					if ( (err.status == 503) || (err.status == "503") || (err.status == 404) || (err.status == "404") )
-						// retry
+						// the EventSource object has given up retrying ... retry reconnecting after 10 seconds
 						setTimeout(function() {
 							startEventSource();
 						}, 10000);
 				}
 				else if ( err.type && err.type.code )
+				{
+					// the EventSource object is retrying to reconnect
 					node.status({fill:"red", shape: "ring", text: "Connection Error: " + err.type.code});
+				}
 				else
+				{
+					// no clue what the error situation is
 			        node.status({fill:"red", shape: "ring", text: "Unexpected Connection Error"});
+				}
 			  };
 
 		}
 		
-		startEventSource();
+	    startEventSource();
 		
 		node.status({fill:"red", shape: "ring", text: "?"});
 		
@@ -195,45 +213,52 @@ module.exports = function(RED) {
 		this.name = config.name;
 		var openhabController = RED.nodes.getNode(config.controller);
 		var node = this;
-
 		
-		node.log('new OpenHABOut, config: ' + JSON.stringify(config));
+		//node.log('new OpenHABOut, config: ' + JSON.stringify(config));
 
+		// handle incoming node-red message
 		this.on("input", function(msg) {
 			
-            var url = openhabController.getConnectionString() + "/rest/items/" + config.itemname;
-            
-			var command = (config.command && (config.command.length != 0)) ? config.command : msg.payload;
+			// if a command is specified in the node's configuration, it overrides the command specified in the message
+            var command = (config.command && (config.command.length != 0)) ? config.command : msg.payload;
 			
             if ( command != undefined )
 			{
+            	// command conversion
 				if ( (msg.payload == "on") || (msg.payload == "1") || (msg.payload == 1) || (msg.payload == true) )
 					command = "ON";
 				else if ( (msg.payload == "off") || (msg.payload == "0") || (msg.payload == 0) || (msg.payload == false) )
 					command = "OFF";
+				
+	            //node.log("COMMAND = " + command);
+				
+	            // execute the appropriate http POST to send the command to openHAB
+				// and update the node's status according to the http response
+				
+				var url = openhabController.getConnectionString() + "/rest/items/" + config.itemname;
+	            
+	            request.post({url: url, body: command}, function(error, response, body) {
+	        		if ( error ) {
+	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
+	        			node.warn("request error '" +  + "' on '" + url + "'");
+	        		}
+	        		else if ( response.statusCode != 200 ) {
+	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
+	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+	        		}
+	        		else {
+	                    node.status({fill:"green", shape: "ring", text: ""});
+	        			
+	        		}
+	        	});
 			}
 			else
 			{
+				// no command specified !
                 node.status({fill:"red", shape: "ring", text: "no command specified"});
 				node.warn('onInput: no command specified');
-				return;
 			}
 
-            node.log("COMMAND = " + command);
-            request.post({url: url, body: command}, function(error, response, body) {
-        		if ( error ) {
-                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
-        			node.warn("request error '" +  + "' on '" + url + "'");
-        		}
-        		else if ( response.statusCode != 200 ) {
-                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
-        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-        		}
-        		else {
-                    node.status({fill:"green", shape: "ring", text: ""});
-        			
-        		}
-        	});
 		});
 		this.on("close", function() {
 			node.log('close');
