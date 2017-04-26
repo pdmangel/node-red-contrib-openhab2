@@ -1,4 +1,4 @@
-#node-red-contrib-openhab2
+# node-red-contrib-openhab2
 ## Description
 
 Nodes facilitating the automation of *openHAB* ( <http://http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
@@ -23,6 +23,6 @@ It requires the selection of an openhab2-controller and an item.
 
 ##### - openhab2-out
 
-Input node that sends commands to an openHAB item.
+Output node that sends commands to an openHAB item.
 It requires the selection of an openhab2-controllerand an item, and optionnaly allows the specification of a command.
 
