@@ -1,7 +1,7 @@
 # node-red-contrib-openhab2
 ## Description
 
-Nodes facilitating the automation of *openHAB* ( <http://http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
+Nodes facilitating the automation of *openHAB* ( <http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
 
 ## Installation
 
