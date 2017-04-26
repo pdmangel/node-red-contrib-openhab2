@@ -1,28 +1,47 @@
-#node-red-contrib-openhab2
+# node-red-contrib-openhab2
 ## Description
-
-Nodes facilitating the automation of *openHAB* ( <http://http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
-
+Nodes facilitating the automation of *openHAB* ( <http://www.openhab.org> ) items with Node-RED ( <http://nodered.org> ).
 ## Installation
-
 ```
 $ cd ~/.node-red
 $ npm install node-red-contrib-openhab2
 ```
-
 ## Nodes
-
 ##### - openhab2-controller
+Registers the address of an openHAB controller.
 
-Configuration node to configure the hostname and port of an openHAB server and to be shared by the openhab2-in and openhab2-out nodes.
+Configuration:
+- Name : Specify a name
+- openHAB host : Specify the hostname or ip address of the openHAB server
+- openHAB port : Specify the port of the openHAB server
 
 ##### - openhab2-in
 
-Input node that catches the state changes of an openHAB item.
-It requires the selection of an openhab2-controller and an item.
+Listens to state changes of a selected openHAB Item.
+
+Configuration:
+- Name : Optionally specify a name
+- Controller : Select the openHAB controller
+- Item : Select the Item to monitor
+
+Messages injected in NodeRED flows:
+- <kbd>msg.payload</kbd> : the state of the selected item
+- <kbd>msg.topic</kbd> : "state" or "statechanged"
+- <kbd>msg.item</kbd> : the item's itemname (not label)
 
 ##### - openhab2-out
 
-Input node that sends commands to an openHAB item.
-It requires the selection of an openhab2-controllerand an item, and optionnaly allows the specification of a command.
+Sends commands to a selected openHAB Item.
+E.g. "ON", "OFF", "REFRESH", ... 
+
+Configuration
+- Name : Optionally specify a name
+- Controller : Select the openHAB controller
+- Item : Select the Item to monitor
+- Command : Optionally specify the command to send to the selected item. If specified, it overrides the command specified in the incoming message.
+
+
+Messages accepted by NodeRED flows
+
+- <kbd>msg.payload</kbd> : command to send to the selected item
 
