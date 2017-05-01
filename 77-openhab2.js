@@ -225,9 +225,9 @@ module.exports = function(RED) {
             if ( command != undefined )
 			{
             	// command conversion
-				if ( (msg.payload == "on") || (msg.payload == "1") || (msg.payload == 1) || (msg.payload == true) )
+				if ( (command == "on") || (command == "1") || (command == 1) || (command == true) )
 					command = "ON";
-				else if ( (msg.payload == "off") || (msg.payload == "0") || (msg.payload == 0) || (msg.payload == false) )
+				else if ( (command == "off") || (command == "0") || (command == 0) || (command == false) )
 					command = "OFF";
 				
 	            //node.log("COMMAND = " + command);
@@ -247,7 +247,7 @@ module.exports = function(RED) {
 	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
 	        		}
 	        		else {
-	                    node.status({fill:"green", shape: "ring", text: ""});
+	                    node.status({fill:"green", shape: "ring", text: "OK"});
 	        			
 	        		}
 	        	});
