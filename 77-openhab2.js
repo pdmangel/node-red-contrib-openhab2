@@ -36,7 +36,7 @@ module.exports = function(RED) {
 
 		// this controller node handles all communication with the configured openhab server
 		
-		function getConnectionString() {
+		this.getConnectionString = function() {
 			return "http://" + config.host + ":" + config.port;
 		}
 
