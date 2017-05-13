@@ -247,17 +247,17 @@ module.exports = function(RED) {
 			
 		};
 		
-		if ( config.output == "StateEvent")
+		if ( config.output == "RawEvent")
+		{
+			openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
+			node.status({});
+		}
+		else // if ( config.output == "StateEvent")
 		{
 			node.currentState = "?";
 			
 			openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
 			node.refreshNodeStatus();
-		}
-		else if ( config.output == "RawEvent")
-		{
-			openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
-			node.status({});
 		}
 		
 		
@@ -294,13 +294,13 @@ module.exports = function(RED) {
 		var openhabController = RED.nodes.getNode(config.controller);
 		
 		this.refreshNodeStatus = function() {
-			var commmError = node.context().get("CommunicationError");
-			var commmStatus = node.context().get("CommunicationStatus");
+			var commError = node.context().get("CommunicationError");
+			var commStatus = node.context().get("CommunicationStatus");
 			
 			node.status({
-				fill: 	(commmError.length == 0 ) ? "green" : "red" ,
-				shape: 	(commmStatus == "ON" ) ? "dot" : "ring",
-				text:	commmError});
+				fill: 	(commError.length == 0 ) ? "green" : "red" ,
+				shape: 	(commStatus == "ON" ) ? "dot" : "ring",
+				text:	(commError.length != 0) ? commError : commStatus});
 			
 		};
 		
@@ -344,7 +344,7 @@ module.exports = function(RED) {
 		openhabController.addListener('CommunicationError', node.processCommError);
 		openhabController.addListener('RawEvent', node.processRawEvent);
 		node.context().set("CommunicationError", "");
-		node.context().set("CommunicationStatus", "");
+		node.context().set("CommunicationStatus", "?");
 		node.refreshNodeStatus();
 
 		/* ===== Node-Red events ===== */
