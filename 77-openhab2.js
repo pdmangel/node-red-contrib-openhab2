@@ -42,7 +42,7 @@ module.exports = function(RED) {
 
 		function getItems() {
 			
-            var url = getConnectionString() + "/rest/items";
+            var url = node.getConnectionString() + "/rest/items";
 			request.get(url, function(error, response, body) {
             	// handle communication errors
         		if ( error ) {
@@ -81,7 +81,7 @@ module.exports = function(RED) {
 			
 			// register for all item events
 			
-			node.es= new EventSource(getConnectionString() + "/rest/events?topics=smarthome/items", {});
+			node.es= new EventSource(node.getConnectionString() + "/rest/events?topics=smarthome/items", {});
 			
 			// handle the 'onopen' event
 			
