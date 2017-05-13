@@ -235,7 +235,7 @@ module.exports = function(RED) {
 				
 			    // inject the state in the node-red flow
 			    var msgid = RED.util.generateId();
-	            node.send({_msgid:msgid, payload: currentState, item: itemName, event: "StateEvent"});
+	            node.send([{_msgid:msgid, payload: currentState, item: itemName, event: "StateEvent"}, null]);
 				
 			}			
 		};
@@ -243,23 +243,14 @@ module.exports = function(RED) {
 		this.processRawEvent = function(event) {
 		    // inject the state in the node-red flow
 		    var msgid = RED.util.generateId();
-            node.send({_msgid:msgid, payload: event, item: itemName, event: "RawEvent"});
+            node.send([null, {_msgid:msgid, payload: event, item: itemName, event: "RawEvent"}]);
 			
 		};
 		
-		if ( config.output == "RawEvent")
-		{
-			openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
-			node.status({});
-		}
-		else // if ( config.output == "StateEvent")
-		{
-			node.currentState = "?";
-			
-			openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
-			node.refreshNodeStatus();
-		}
-		
+		node.context().set("currentState", "?");
+		openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
+		openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
+		node.refreshNodeStatus();		
 		
 
 		/* ===== Node-Red events ===== */
@@ -270,10 +261,8 @@ module.exports = function(RED) {
 		});
 		this.on("close", function() {
 			node.log('close');
-			if ( config.output == "StateEvent")
-				openhabController.removeListener(itemName + '/StateEvent', node.processStateEvent);
-			else if ( config.output == "RawEvent")
-				openhabController.removeListener(itemName + '/RawEvent', node.processRawEvent);
+			openhabController.removeListener(itemName + '/StateEvent', node.processStateEvent);
+			openhabController.removeListener(itemName + '/RawEvent', node.processRawEvent);
 		});
 		
 	}

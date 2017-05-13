@@ -50,13 +50,6 @@
         <label for="node-input-itemlabel" ><i class="fa fa-crosshairs"></i> ItemLabel</label>
         <input type="text" id="node-input-itemlabel">
     </div>
-    <div class="form-row">
-        <label for="node-input-output"><i class="fa fa-arrow-circle-right"></i> Output</label>
-    	<select id="node-input-output" name="node-input-itemname" style="width: 250px;">
-			<option value="StateEvent">State Events</option>
-			<option value="RawEvent">Raw Events</option>
-    	</select>
-    </div>
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-monitor">
@@ -95,7 +88,7 @@
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-controller">
-    <p>Registers the address of an openHAB controller.</p>
+    <p>Registers the address of an openHAB controller and listens to all items' events.</p>
 	<p></p>
 	<b>Configuration</b>
     <ul>
@@ -113,15 +106,27 @@
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
         <li><b>Item :</b>Select the Item to monitor</li>
-        <li><b>Output :</b>Select the type of output</li>
    	 </ul>
 	<p></p>
-	<b>Messages injected in NodeRED flows</b>
+
+	<b>Messages injected in NodeRED flows (2 channels)</b>
     <ul>
-        <li><code>msg.item</code> : the item's itemname (not label)</li>
-        <li><code>msg.topic</code> : "StateEvent" or "RawEvent"</li>
-        <li><code>msg.payload</code> : the new state of the selected item or a raw (unprocessed) event</li>
-  	 </ul>
+        <li>Channel 1 :
+			<ul>
+        		<li><code>msg.item</code> : the item's itemname (not label)</li>
+        		<li><code>msg.topic</code> : "StateEvent"</li>
+        		<li><code>msg.payload</code> : the new state of the selected item</li>
+  	 		</ul>
+		</li>
+        <li>Channel 2 :
+			<ul>
+        		<li><code>msg.item</code> : the item's itemname (not label)</li>
+        		<li><code>msg.topic</code> : "RawEvent"</li>
+        		<li><code>msg.payload</code> : raw (unprocessed) event for the selected item</li>
+  	 		</ul>
+		</li>
+
+   	 </ul>
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-monitor">
@@ -130,6 +135,7 @@
 	<b>Configuration</b>
     <ul>
         <li><b>Name :</b> Optionally specify a name</li>
+        <li><b>Controller :</b> Select the openHAB controller</li>
    	 </ul>
 	<p></p>
 	<b>Messages injected in NodeRED flows (3 channels)</b>
@@ -149,8 +155,8 @@
 		</li>
         <li>Channel 3 :
 			<ul>
-        		<li><code>msg.topic</code> : "RawMessage"</li>
-        		<li><code>msg.payload</code> : raw (unprocessed) event for all Items</li>
+        		<li><code>msg.topic</code> : "RawEvent"</li>
+        		<li><code>msg.payload</code> : raw (unprocessed) event for all items</li>
   	 		</ul>
 		</li>
 
@@ -260,11 +266,10 @@
             name:      {value:""},
 		    controller:  {value:"", type:"openhab2-controller", required:true},
 		    itemname:  {value:"", required:true},
-		    itemlabel: {value:""},
-		    output: {value:"StateEvent", required:true}
+		    itemlabel: {value:""}
         },
         inputs: 0,
-        outputs: 1,
+        outputs: 2,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
         	
