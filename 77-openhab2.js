@@ -32,11 +32,134 @@ module.exports = function(RED) {
 	function OpenHABControllerNode(config) {
 		RED.nodes.createNode(this, config);
 
-		// this controller node doesn't do anything; it merely serves as shared object for the openHAB server connection parameters
+		var node = this;
+
+		// this controller node handles all communication with the configured openhab server
 		
-		this.getConnectionString = function() {
+		function getConnectionString() {
 			return "http://" + config.host + ":" + config.port;
 		}
+
+		function getItems() {
+			
+            var url = getConnectionString() + "/rest/items";
+			request.get(url, function(error, response, body) {
+            	// handle communication errors
+        		if ( error ) {
+        			node.warn("request error '" +  + "' on '" + url + "'");
+					node.emit('CommunicationError', error);
+        		}
+        		else if ( response.statusCode == 503 )
+        		{
+					// openhab not fully ready .... retry after 5 seconds
+        			node.warn("response status 503 on '" + url + "' .... retry later");
+					node.emit('CommunicationError', "" + response.statusCode );
+					setTimeout(function() {
+						getItems();
+					}, 5000);
+        		}
+        		else if ( response.statusCode != 200 ) {
+        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+					node.emit('CommunicationError', JSON.stringify(response));
+        		}
+        		else {
+        			// update the registered nodes with item state
+    				node.emit('CommunicationStatus', "ON");
+    				
+		    		var items = JSON.parse(body);
+		    		
+		    		items.forEach(function(item) {
+						node.emit(item.name + "/StateEvent", {type: "ItemStateEvent", state: item.state});
+		    		});
+		    		
+        		}
+           	});
+			
+		}
+		
+		function startEventSource() {
+			
+			// register for all item events
+			
+			node.es= new EventSource(getConnectionString() + "/rest/events?topics=smarthome/items", {});
+			
+			// handle the 'onopen' event
+			
+			node.es.onopen = function(event) {
+
+				// get the current state of all items
+	            getItems();
+	       	};
+
+			// handle the 'onmessage' event
+			
+	       	node.es.onmessage = function(msg) {
+			    //node.log(msg.data);
+				try
+				{
+        			// update the node status with the Item's new state
+				    msg = JSON.parse(msg.data);
+				    msg.payload = JSON.parse(msg.payload);
+				    
+				    var item = msg.topic.substring(("smarthome/items/").length, msg.topic.lastIndexOf('/'));
+				    
+				    node.emit(item + "/RawEvent", msg);
+				    node.emit("RawEvent", msg);
+				    
+				    if ( (msg.type == "ItemStateEvent") || (msg.type == "ItemStateChangedEvent") )
+						node.emit(item + "/StateEvent", {type: msg.type, state: msg.payload.value});
+				}
+				catch(e)
+				{
+					// report an unexpected error
+					node.error("Unexpected Error : " + e)
+				}
+				
+			};
+			
+			// handle the 'onerror' event
+			
+	       	node.es.onerror = function(err) {
+				if( err.type && (JSON.stringify(err.type) === '{}') )
+					return; // ignore
+	       		
+	       		node.warn('ERROR ' +	JSON.stringify(err));
+				node.emit('CommunicationError', JSON.stringify(err));
+				
+				
+				if ( err.status )
+				{
+					if ( (err.status == 503) || (err.status == "503") || (err.status == 404) || (err.status == "404") )
+						// the EventSource object has given up retrying ... retry reconnecting after 10 seconds
+						
+						node.es.close();
+						delete node.es;
+						
+						node.emit('CommunicationStatus', "OFF");
+
+						setTimeout(function() {
+							startEventSource();
+						}, 10000);
+				}
+				else if ( err.type && err.type.code )
+				{
+					// the EventSource object is retrying to reconnect
+				}
+				else
+				{
+					// no clue what the error situation is
+				}
+			  };
+
+		}
+		
+	    startEventSource();		
+	    
+		this.on("close", function() {
+			node.log('close');
+			node.es.close();
+			node.emit('CommunicationStatus', "OFF");
+		});
 
 	}
     RED.nodes.registerType("openhab2-controller", OpenHABControllerNode);
@@ -84,106 +207,59 @@ module.exports = function(RED) {
 
 		// starts an EventSource to listen to openHAB2's Server-Sent Events 'statechanged' for the selected Item
 		
-		function startEventSource() {
-			node.es= new EventSource(openhabController.getConnectionString() + "/rest/events?topics=smarthome/items/" + itemName + "/statechanged", {});
+		this.refreshNodeStatus = function() {
+			var currentState = node.context().get("currentState");
 			
-			// handle the 'onopen' event
+		    if ( currentState == null )
+		        node.status({fill:"yellow", shape: "ring", text: "state:" + currentState});		    	
+		    else if ( currentState == "ON" )
+		        node.status({fill:"green", shape: "dot", text: "state:" + currentState});
+		    else if ( currentState == "OFF" )
+		        node.status({fill:"green", shape: "ring", text: "state:" + currentState});
+		    else
+		        node.status({fill:"blue", shape: "ring", text: "state:" + currentState});
+		};
+		
+		this.processStateEvent = function(event) {
 			
-			node.es.onopen = function(event) {
-	            node.status({fill:"blue", shape: "ring", text: "?"});
-
-	            // get the current state of the Item
-	            var url = openhabController.getConnectionString() + "/rest/items/" + itemName;
-	            
-	            request.get(url, function(error, response, body) {
-	            	// handle communication errors
-	        		if ( error ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
-	        			node.warn("request error '" +  + "' on '" + url + "'");
-	        		}
-	        		else if ( response.statusCode != 200 ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
-	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-	        		}
-	        		else {
-	        			// update the node status with the Item's state
-			    		var payload = JSON.parse(body);
-			    		
-					    if ( payload.state == "ON" )
-					        node.status({fill:"green", shape: "dot", text: "state:" + payload.state});
-					    else if ( payload.state == "OFF" )
-					        node.status({fill:"green", shape: "ring", text: "state:" + payload.state});
-					    else
-					        node.status({fill:"blue", shape: "ring", text: "state:" + payload.state});
-
-					    // inject the state in the node-red flow
-					    var msgid = RED.util.generateId();
-			            node.send({_msgid:msgid, topic: "state", payload:payload.state, item: itemName});
-	        		}
-	           	});
-	       	};
-
-			// handle the 'onmessage' event
+			var currentState = node.context().get("currentState");
 			
-	       	node.es.onmessage = function(e) {
-			    //node.log(e.data);
-				try
-				{
-        			// update the node status with the Item's new state
-				    var msg = JSON.parse(e.data);
-				    var payload = JSON.parse(msg.payload);
-				    
-				    if ( payload.value == "ON" )
-				        node.status({fill:"green", shape: "dot", text: "state:" + payload.value});
-				    else if ( payload.value == "OFF" )
-				        node.status({fill:"green", shape: "ring", text: "state:" + payload.value});
-				    else
-				        node.status({fill:"blue", shape: "ring", text: "state:" + payload.value});
-
-				    // inject the state in the node-red flow
-				    var msgid = RED.util.generateId();
-		            node.send({_msgid:msgid, topic: "statechanged", payload:payload.value, item: itemName});
-				}
-				catch(e)
-				{
-					// report an unexpected error
-	                node.status({fill:"red", shape: "ring", text: "Unexpected Error : " + e.msg});
-					node.error("Unexpected Error : " + e.msg)
-				}
+			if ( (event.state != currentState) && (event.state != "null") )
+			{
+				// update node's context variable
+				currentState = event.state;
+				node.context().set("currentState", currentState);
 				
-			};
-			
-			// handle the 'onerror' event
-			
-	       	node.es.onerror = function(err) {
-				node.warn('ERROR ' +	JSON.stringify(err));
+				// update node's visual status
+				node.refreshNodeStatus();
 				
-				if ( err.status )
-				{
-					node.status({fill:"red", shape: "dot", text: "Connection Status: " + err.status});
-					if ( (err.status == 503) || (err.status == "503") || (err.status == 404) || (err.status == "404") )
-						// the EventSource object has given up retrying ... retry reconnecting after 10 seconds
-						setTimeout(function() {
-							startEventSource();
-						}, 10000);
-				}
-				else if ( err.type && err.type.code )
-				{
-					// the EventSource object is retrying to reconnect
-					node.status({fill:"red", shape: "ring", text: "Connection Error: " + err.type.code});
-				}
-				else
-				{
-					// no clue what the error situation is
-			        node.status({fill:"red", shape: "ring", text: "Unexpected Connection Error"});
-				}
-			  };
-
+			    // inject the state in the node-red flow
+			    var msgid = RED.util.generateId();
+	            node.send({_msgid:msgid, payload: currentState, item: itemName, event: "StateEvent"});
+				
+			}			
+		};
+		
+		this.processRawEvent = function(event) {
+		    // inject the state in the node-red flow
+		    var msgid = RED.util.generateId();
+            node.send({_msgid:msgid, payload: event, item: itemName, event: "RawEvent"});
+			
+		};
+		
+		if ( config.output == "StateEvent")
+		{
+			node.currentState = "?";
+			
+			openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
+			node.refreshNodeStatus();
+		}
+		else if ( config.output == "RawEvent")
+		{
+			openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
+			node.status({});
 		}
 		
-	    startEventSource();
-		
-		node.status({fill:"red", shape: "ring", text: "?"});
 		
 
 		/* ===== Node-Red events ===== */
@@ -194,12 +270,99 @@ module.exports = function(RED) {
 		});
 		this.on("close", function() {
 			node.log('close');
-			node.es.close();
+			if ( config.output == "StateEvent")
+				openhabController.removeListener(itemName + '/StateEvent', node.processStateEvent);
+			else if ( config.output == "RawEvent")
+				openhabController.removeListener(itemName + '/RawEvent', node.processRawEvent);
 		});
 		
 	}
 	//
 	RED.nodes.registerType("openhab2-in", OpenHABIn);
+	
+	
+	/**
+	* ====== openhab2-monitor ===================
+	* Monitors connection status and errors of
+	* the associated openhab2-controller
+	* ===========================================
+	*/
+	function OpenHABMonitor(config) {
+		RED.nodes.createNode(this, config);
+		this.name = config.name;
+		var node = this;
+		var openhabController = RED.nodes.getNode(config.controller);
+		
+		this.refreshNodeStatus = function() {
+			var commmError = node.context().get("CommunicationError");
+			var commmStatus = node.context().get("CommunicationStatus");
+			
+			node.status({
+				fill: 	(commmError.length == 0 ) ? "green" : "red" ,
+				shape: 	(commmStatus == "ON" ) ? "dot" : "ring",
+				text:	commmError});
+			
+		};
+		
+		this.processCommStatus = function(status) {
+			
+			// update node's context variable
+
+			node.context().set("CommunicationStatus", status);
+			if ( status == "ON" )
+				node.context().set("CommunicationError", "");
+			
+			// update node's visual status
+			node.refreshNodeStatus();
+			
+		    // inject the state in the node-red flow (channel 1)
+		    var msgid = RED.util.generateId();
+            node.send([{_msgid:msgid, payload: status, event: "CommunicationStatus"}, null, null]);
+		};
+		
+		this.processCommError = function(error) {
+			
+			// update node's context variable
+			node.context().set("CommunicationError", "" + error);
+			
+			// update node's visual status
+			node.refreshNodeStatus();
+			
+		    // inject the error in the node-red flow (channel 2)
+		    var msgid = RED.util.generateId();
+            node.send([null, {_msgid:msgid, payload: error, event: "CommunicationError"}, null]);
+		};
+
+		this.processRawEvent = function(event) {
+		    // inject the state in the node-red flow (channel 3)
+		    var msgid = RED.util.generateId();
+            node.send([null, null, {_msgid:msgid, payload: event, event: "RawEvent"}]);
+			
+		};
+		
+		openhabController.addListener('CommunicationStatus', node.processCommStatus);
+		openhabController.addListener('CommunicationError', node.processCommError);
+		openhabController.addListener('RawEvent', node.processRawEvent);
+		node.context().set("CommunicationError", "");
+		node.context().set("CommunicationStatus", "");
+		node.refreshNodeStatus();
+
+		/* ===== Node-Red events ===== */
+		this.on("input", function(msg) {
+			if (msg != null) {
+				
+			};
+		});
+		this.on("close", function() {
+			node.log('close');
+			openhabController.removeListener('CommunicationStatus', node.processCommStatus);
+			openhabController.removeListener('CommunicationError', node.processCommError);
+			openhabController.removeListener('RawEvent', node.processRawEvent);
+		});
+		
+	}
+	//
+	RED.nodes.registerType("openhab2-monitor", OpenHABMonitor);
 	
 	
 	/**
