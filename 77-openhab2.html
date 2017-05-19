@@ -82,13 +82,21 @@
         <input type="text" id="node-input-itemlabel">
     </div>
     <div class="form-row">
-        <label for="node-input-command"><i class="fa  fa-send"></i> Command</label>
-        <input type="text" id="node-input-command" placeholder="Command">
+        <label for="node-input-topic"><i class="fa fa-tasks"></i> Topic</label>
+    	<select id="node-input-topic" name="node-input-topic" style="width: 250px;">
+			<option value=""></option>
+			<option value="ItemCommand">ItemCommand</option>
+			<option value="ItemUpdate">ItemUpdate</option>
+    	</select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-payload"><i class="fa fa-envelope"></i> Payload</label>
+        <input type="text" id="node-input-payload" placeholder="Payload">
     </div>
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-controller">
-    <p>Registers the address of an openHAB controller and listens to all items' events.</p>
+    <p>Performs all communication with the configured openHAB controller.</p>
 	<p></p>
 	<b>Configuration</b>
     <ul>
@@ -166,7 +174,7 @@
 
 
 <script type="text/x-red" data-help-name="openhab2-out">
-    <p>Sends commands to a selected openHAB Item.</p>
+    <p>Sends commands or state updates to a selected openHAB Item.</p>
     <p>E.g. "ON", "OFF", "REFRESH", ... </p>
 	<p></p>
 	<b>Configuration</b>
@@ -174,12 +182,14 @@
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
         <li><b>Item :</b> Select the Item to monitor</li>
-        <li><b>Command :</b> Optionally specify the command to send to the selected item. If specified, it overrides the command specified in the incoming message.</li>
+        <li><b>Topic :</b> Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message.</li>
+        <li><b>Payload :</b> Optionally specify the command or update value to send to the selected item. If specified, it overrides the value specified in the incoming message.</li>
    	 </ul>
 	<p></p>
 	<b>Messages accepted by NodeRED flows</b>
     <ul>
-        <li><code>msg.payload</code> : command to send to the selected item</li>
+        <li><code>msg.topic</code> optionally "ItemCommand", "ItemUpdate"</li>
+        <li><code>msg.payload</code> optionally the fixed command or update value to send to the selected item</li>
    	 </ul>
 </script>
 
@@ -310,7 +320,8 @@
 		    controller:  {value:"", type:"openhab2-controller", required:true},
 		    itemname:  {value:"", required:true},
 		    itemlabel: {value:""},
-		    command:  {value:""}
+		    topic: {value:"", required:false},
+		    value:  {value:"", required:false}
 		},
         inputs: 1,
         outputs: 0,

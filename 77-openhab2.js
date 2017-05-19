@@ -36,13 +36,13 @@ module.exports = function(RED) {
 
 		// this controller node handles all communication with the configured openhab server
 		
-		this.getConnectionString = function() {
+		function getConnectionString() {
 			return "http://" + config.host + ":" + config.port;
 		}
 
 		function getItems() {
 			
-            var url = node.getConnectionString() + "/rest/items";
+            var url = getConnectionString() + "/rest/items";
 			request.get(url, function(error, response, body) {
             	// handle communication errors
         		if ( error ) {
@@ -53,14 +53,14 @@ module.exports = function(RED) {
         		{
 					// openhab not fully ready .... retry after 5 seconds
         			node.warn("response status 503 on '" + url + "' .... retry later");
-					node.emit('CommunicationError', "" + response.statusCode );
+					node.emit('CommunicationError', response );
 					setTimeout(function() {
 						getItems();
 					}, 5000);
         		}
         		else if ( response.statusCode != 200 ) {
         			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-					node.emit('CommunicationError', JSON.stringify(response));
+					node.emit('CommunicationError', response);
         		}
         		else {
         			// update the registered nodes with item state
@@ -81,7 +81,7 @@ module.exports = function(RED) {
 			
 			// register for all item events
 			
-			node.es= new EventSource(node.getConnectionString() + "/rest/events?topics=smarthome/items", {});
+			node.es= new EventSource(getConnectionString() + "/rest/events?topics=smarthome/items", {});
 			
 			// handle the 'onopen' event
 			
@@ -155,6 +155,34 @@ module.exports = function(RED) {
 		
 	    startEventSource();		
 	    
+
+		this.send = function(itemname, topic, payload) {
+			var url;
+			
+            if ( topic === "ItemUpdate" )
+            {
+            	url = getConnectionString() + "/rest/items/" + itemname + "/state";
+            	method = request.put;
+            }
+            else
+            {
+            	url = getConnectionString() + "/rest/items/" + itemname;
+            	method = request.post;
+            }
+            
+			method({url: url, body: payload}, function(error, response, body) {
+        		if ( error ) {
+        			node.warn("request error '" + error + "' on '" + url + "'");
+					node.emit('CommunicationError', error);
+        		}
+        		else if ( Math.floor(response.statusCode / 100) != 2 ) {
+        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+					node.emit('CommunicationError', response);
+        		}
+        	});
+			
+		};
+
 		this.on("close", function() {
 			node.log('close');
 			node.es.close();
@@ -251,8 +279,7 @@ module.exports = function(RED) {
 		openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
 		openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
 		node.refreshNodeStatus();		
-		
-
+				
 		/* ===== Node-Red events ===== */
 		this.on("input", function(msg) {
 			if (msg != null) {
@@ -356,7 +383,7 @@ module.exports = function(RED) {
 	
 	/**
 	* ====== openhab2-out ===================
-	* Sends outgoing commands from
+	* Sends outgoing commands or update from
 	* messages received via node-red flows
 	* =======================================
 	*/
@@ -370,45 +397,32 @@ module.exports = function(RED) {
 
 		// handle incoming node-red message
 		this.on("input", function(msg) {
+
+			// if a payload is specified in the node's configuration, it overrides the payload specified in the message
+            var payload = (config.payload && (config.payload.length != 0)) ? config.payload : msg.payload;
+            var topic = (config.topic && (config.topic.length != 0)) ? config.topic : msg.topic;
 			
-			// if a command is specified in the node's configuration, it overrides the command specified in the message
-            var command = (config.command && (config.command.length != 0)) ? config.command : msg.payload;
-			
-            if ( command != undefined )
+            if ( payload != undefined )
 			{
-            	// command conversion
-				if ( (command == "on") || (command == "1") || (command == 1) || (command == true) )
-					command = "ON";
-				else if ( (command == "off") || (command == "0") || (command == 0) || (command == false) )
-					command = "OFF";
+            	// payload conversion
+				if ( (payload == "on") || (payload == "1") || (payload == 1) || (payload == true) )
+					payload = "ON";
+				else if ( (payload == "off") || (payload == "0") || (payload == 0) || (payload == false) )
+					payload = "OFF";
 				
-	            //node.log("COMMAND = " + command);
+	            //node.log("payload = " + payload);
 				
 	            // execute the appropriate http POST to send the command to openHAB
 				// and update the node's status according to the http response
 				
-				var url = openhabController.getConnectionString() + "/rest/items/" + config.itemname;
+				openhabController.send(config.itemname, topic, payload);
 	            
-	            request.post({url: url, body: command}, function(error, response, body) {
-	        		if ( error ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(error)});
-	        			node.warn("request error '" +  + "' on '" + url + "'");
-	        		}
-	        		else if ( response.statusCode != 200 ) {
-	                    node.status({fill:"red", shape: "ring", text: JSON.stringify(response)});
-	        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-	        		}
-	        		else {
-	                    node.status({fill:"green", shape: "ring", text: "OK"});
-	        			
-	        		}
-	        	});
 			}
 			else
 			{
-				// no command specified !
-                node.status({fill:"red", shape: "ring", text: "no command specified"});
-				node.warn('onInput: no command specified');
+				// no payload specified !
+                node.status({fill:"red", shape: "ring", text: "no payload specified"});
+				node.warn('onInput: no payload specified');
 			}
 
 		});

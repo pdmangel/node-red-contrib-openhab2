@@ -14,7 +14,7 @@ $ npm install node-red-contrib-openhab2
 
 ##### - openhab2-controller
 
-Registers the address of an openHAB controller and listens to all items' events.
+Performs all communication with the configured openHAB controller.
 
 *Configuration:*
 - Name : Specify a name
@@ -66,16 +66,18 @@ Channel 3:
 
 ##### - openhab2-out
 
-Sends commands to a selected openHAB Item.
+Sends commands or state updates to a selected openHAB Item.
 E.g. "ON", "OFF", "REFRESH", ... 
 
 *Configuration:*
 - Name : Optionally specify a name
 - Controller : Select the openHAB controller
-- Item : Select the Item to monitor
-- Command : Optionally specify the command to send to the selected item. If specified, it overrides the command specified in the incoming message.
+- Item : Select the Item to address
+- Topic : Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message. 
+- Payload : Optionally specify the command or update value to send to the selected item. If specified, it overrides the payload specified in the incoming message.
 
 
 *Messages accepted by NodeRED flows:*
 
-- <kbd>msg.payload</kbd> : command to send to the selected item
+- <kbd>msg.topic</kbd> :  optionally "ItemCommand", "ItemUpdate"
+- <kbd>msg.payload</kbd> : optionally the fixed command or update value to send to the selected item
