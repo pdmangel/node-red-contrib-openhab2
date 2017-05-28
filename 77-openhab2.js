@@ -227,7 +227,6 @@ module.exports = function(RED) {
 		var node = this;
 		var openhabController = RED.nodes.getNode(config.controller);
 		var itemName = config.itemname;
-		var itemLabel = config.itemlabel;
 		
 		if ( itemName != undefined ) itemName = itemName.trim();
 		
