@@ -409,7 +409,8 @@ module.exports = function(RED) {
 					payload = "ON";
 				else if ( (payload == "off") || (payload == "0") || (payload == 0) || (payload == false) )
 					payload = "OFF";
-				
+				else
+					payload = "" + payload;
 	            //node.log("payload = " + payload);
 				
 	            // execute the appropriate http POST to send the command to openHAB

@@ -46,10 +46,6 @@
     	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
     	</select>
     </div>
-    <div class="form-row" hidden>
-        <label for="node-input-itemlabel" ><i class="fa fa-crosshairs"></i> ItemLabel</label>
-        <input type="text" id="node-input-itemlabel">
-    </div>
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-monitor">
@@ -76,10 +72,6 @@
         <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
     	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
     	</select>
-    </div>
-    <div class="form-row"  hidden>
-        <label for="node-input-itemlabel"><i class="fa fa-crosshairs"></i> ItemLabel</label>
-        <input type="text" id="node-input-itemlabel">
     </div>
     <div class="form-row">
         <label for="node-input-topic"><i class="fa fa-tasks"></i> Topic</label>
@@ -227,18 +219,17 @@
                      var items = data;
                      
                      items.sort(function(a,b) {
-                    	 if ( a.label < b.label )
+                    	 if ( a.name < b.name )
                     		 return -1;
-                    	 else if ( a.label > b.label )
+                    	 else if ( a.name > b.name )
                     		 return 1;
                     	 else
                     		 return 0;
                      });
                      items.forEach(function(item) {
-                    	 itemSelectionEl.append('<option>' + item.label + '</option>');
+                    	 itemSelectionEl.append('<option>' + item.name + '</option>');
  							var it = itemSelectionEl.find('option').last();
  							it.attr('value', item.name);
- 							it.attr('itemlabel', item.label);
                     		});
                      itemSelectionEl.val(itemName);
                   })
@@ -256,14 +247,7 @@
 		$('#node-input-controller').change(function(ev) {
 	        updateOpenhabItemSelection(RED.nodes.node($('#node-input-controller').val()), $('#node-input-').val() || node.itemname);
 		});
-        
-		$('#node-input-itemname').change(function(ev) {
-			if ( $('#node-input-itemname').val() != null ) {
-				var itemEl = $('#node-input-itemname').find('option[value='+ ($('#node-input-itemname').val() || node.itemname) + ']');
-				$('#node-input-itemlabel').val(itemEl.attr('itemlabel'));
-			}
-		});
-        
+                
 
 	}
 </script>
@@ -276,14 +260,13 @@
             name:      {value:""},
 		    controller:  {value:"", type:"openhab2-controller", required:true},
 		    itemname:  {value:"", required:true},
-		    itemlabel: {value:""}
         },
         inputs: 0,
         outputs: 2,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
         	
-            return(this.name||this.itemlabel||this.itemname||"openhab2 in");
+            return(this.name||this.itemname||"openhab2 in");
         },
         oneditprepare: function() {
         	openhabEditPrepare(this);
@@ -319,15 +302,14 @@
             name:      {value:""},
 		    controller:  {value:"", type:"openhab2-controller", required:true},
 		    itemname:  {value:"", required:true},
-		    itemlabel: {value:""},
 		    topic: {value:"", required:false},
-		    value:  {value:"", required:false}
+		    payload:  {value:"", required:false}
 		},
         inputs: 1,
         outputs: 0,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
-            return(this.name||this.itemlabel||this.itemname||"openhab2 out");
+            return(this.name||this.itemname||"openhab2 out");
         },
         oneditprepare: function() {
         	openhabEditPrepare(this);
