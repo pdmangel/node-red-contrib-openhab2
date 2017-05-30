@@ -34,10 +34,50 @@ module.exports = function(RED) {
 
 		var node = this;
 
+		node.log(JSON.stringify(config));
+		
 		// this controller node handles all communication with the configured openhab server
+
 		
 		function getConnectionString() {
-			return "http://" + config.host + ":" + config.port;
+			var url;
+			
+			if ( config.protocol )
+				url = config.protocol;
+			else
+				url = "http";
+			
+			url += "://";
+
+			if ( (config.username != undefined) && (config.username.trim().length != 0) )
+			{
+				url += config.username.trim();
+				
+				if ( (config.password != undefined) && (config.password.length != 0) )
+				{
+					url += ":" + config.password;
+				}
+				url += "@";
+			}
+			url +=  config.host;
+			
+			if ( (config.port != undefined) && (config.port.trim().length != 0) )
+			{
+				url += ":" + config.port.trim();
+			}
+
+			if ( (config.path != undefined) && (config.path.trim().length != 0) )
+			{
+				var path = config.path.trim();
+
+				path = path.replace(/^[\/]+/, '');
+				path = path.replace(/[\/]+$/, '');
+				
+				url += "/" + path;
+			}
+			
+node.log("url = " + url);
+			return url;
 		}
 
 		function getItems() {
@@ -46,7 +86,7 @@ module.exports = function(RED) {
 			request.get(url, function(error, response, body) {
             	// handle communication errors
         		if ( error ) {
-        			node.warn("request error '" +  + "' on '" + url + "'");
+        			node.warn("request error '" + error  + "' on '" + url + "'");
 					node.emit('CommunicationError', error);
         		}
         		else if ( response.statusCode == 503 )

@@ -14,12 +14,16 @@ $ npm install node-red-contrib-openhab2
 
 ##### - openhab2-controller
 
-Performs all communication with the configured openHAB controller.
+Configuration node for communication with an openHAB controller.
 
 *Configuration:*
-- Name : Specify a name
-- openHAB host : Specify the hostname or ip address of the openHAB server
-- openHAB port : Specify the port of the openHAB server
+- Name : Specify a name for the configuration node
+- Protocol : "http" or "https"
+- Host : Specify the hostname or ip address
+- Port : (Optionally) Specify the ip port
+- Path : (Optionally) Specify the additional base path
+- Username : (Optionally) Specify the username to authenticate
+- Password : (Optionally) Specify the password to authenticate
 
 ##### - openhab2-in
 

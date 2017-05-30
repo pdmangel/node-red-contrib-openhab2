@@ -19,22 +19,42 @@
 -->
 <script type="text/x-red" data-template-name="openhab2-controller">
     <div class="form-row">
-        <label for="node-config-input-name"><i class="fa fa-tag"></i>Name</label>
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-config-input-name" placeholder="Name">
     </div>
     <div class="form-row">
-        <label for="node-config-input-host"><i class="fa fa-globe"></i>openHAB Host</label>
+        <label for="node-config-input-protocol"><i class="fa fa-unlock-alt"></i> Protocol</label>
+    	<select id="node-config-input-protocol" name="node-config-input-protocol" style="width: 250px;">
+			<option value="http">http</option>
+			<option value="https">https</option>
+    	</select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-globe"></i> Host</label>
         <input type="text" id="node-config-input-host">
     </div>
     <div class="form-row">
-        <label for="node-config-input-port"><i class="icon-bookmark"></i>openHAB Port</label>
+        <label for="node-config-input-port"><i class="icon-bookmark"></i> Port</label>
         <input type="text" id="node-config-input-port">
     </div>
+    <div class="form-row">
+        <label for="node-config-input-path"><i class="fa fa-chevron-right"></i> Path</label>
+        <input type="text" id="node-config-input-path">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-username"><i class="fa fa-user"></i> Username</label>
+        <input type="text" id="node-config-input-username">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-password"><i class="fa fa-user-secret"></i> Password</label>
+        <input type="password" id="node-config-input-password">
+    </div>
+
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-in">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i>Name</label>
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
     <div class="form-row">
@@ -50,7 +70,7 @@
 
 <script type="text/x-red" data-template-name="openhab2-monitor">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i>Name</label>
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
     <div class="form-row">
@@ -61,7 +81,7 @@
 
 <script type="text/x-red" data-template-name="openhab2-out">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i>Name</label>
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
     <div class="form-row">
@@ -88,13 +108,17 @@
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-controller">
-    <p>Performs all communication with the configured openHAB controller.</p>
+    <p>Configuration node for communication with an openHAB controller.</p>
 	<p></p>
 	<b>Configuration</b>
     <ul>
-        <li><b>Name :</b> Specify a name</li>
-        <li><b>openHAB host :</b> Specify the hostname or ip address of the openHAB server</li>
-        <li><b>openHAB port :</b> Specify the port of the openHAB server</li>
+        <li><b>Name :</b> Specify a name for the configuration node</li>
+        <li><b>Protocol :</b> "http" or "https"</li>
+        <li><b>Host :</b> Specify the hostname or ip address</li>
+        <li><b>Port :</b> (Optionally) Specify the ip port</li>
+        <li><b>Path :</b> (Optionally) Specify the additional base path</li>
+        <li><b>Username :</b> (Optionally) Specify the username to authenticate</li>
+        <li><b>Password :</b> (Optionally) Specify the password to authenticate</li>
    	 </ul>
 </script>
 
@@ -189,9 +213,13 @@
 	RED.nodes.registerType('openhab2-controller', {
 		category: 'config',
 		defaults: {
-			name: {value:"My openHAB",required:true},
+			name: {value:"",required:true},
+			protocol: {value:"http",required:true},
 			host: {value:"localhost",required:true},
-			port: {value:8080,	required:true,	validate:RED.validators.number()}
+			port: {value:8080,	required:false /*,	validate:RED.validators.number() */},
+			path: {value:"",	required:false},
+		    username: {value:"", required:false},
+		    password:  {value:"", required:false}			
 		},
 		label: function() {
 			return this.name;
