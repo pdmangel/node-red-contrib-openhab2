@@ -272,7 +272,6 @@ node.log("url = " + url);
 		
 		//node.log('OpenHABIn, config: ' + JSON.stringify(config));
 
-		// starts an EventSource to listen to openHAB2's Server-Sent Events 'statechanged' for the selected Item
 		
 		this.refreshNodeStatus = function() {
 			var currentState = node.context().get("currentState");
@@ -444,9 +443,9 @@ node.log("url = " + url);
             if ( payload != undefined )
 			{
             	// payload conversion
-				if ( (payload == "on") || (payload == "1") || (payload == 1) || (payload == true) )
+				if ( (payload == "on") || (payload == true) )
 					payload = "ON";
-				else if ( (payload == "off") || (payload == "0") || (payload == 0) || (payload == false) )
+				else if ( (payload == "off") || (payload == false) )
 					payload = "OFF";
 				else
 					payload = "" + payload;
