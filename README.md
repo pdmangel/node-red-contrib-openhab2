@@ -85,3 +85,18 @@ E.g. "ON", "OFF", "REFRESH", ...
 
 - <kbd>msg.topic</kbd> :  optionally "ItemCommand", "ItemUpdate"
 - <kbd>msg.payload</kbd> : optionally the fixed command or update value to send to the selected item
+
+##### - openhab2-get
+
+Gets an openHAB Item on an input message.
+
+*Configuration:*
+- Name : Optionally specify a name
+- Controller : Select the openHAB controller
+- Item : Select the Item to monitor
+
+*Messages injected in NodeRED flows (1 channel):*
+
+Channel 1:
+The input message with addition of :
+- <kbd>msg.payload</kbd> : the item object (name, label, state, ...)

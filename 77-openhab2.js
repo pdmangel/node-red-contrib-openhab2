@@ -80,7 +80,7 @@ node.log("url = " + url);
 			return url;
 		}
 
-		function getItems() {
+		function getStateOfItems() {
 			
             var url = getConnectionString() + "/rest/items";
 			request.get(url, function(error, response, body) {
@@ -95,7 +95,7 @@ node.log("url = " + url);
         			node.warn("response status 503 on '" + url + "' .... retry later");
 					node.emit('CommunicationError', response );
 					setTimeout(function() {
-						getItems();
+						getStateOfItems();
 					}, 5000);
         		}
         		else if ( response.statusCode != 200 ) {
@@ -128,7 +128,7 @@ node.log("url = " + url);
 			node.es.onopen = function(event) {
 
 				// get the current state of all items
-	            getItems();
+	            getStateOfItems();
 	       	};
 
 			// handle the 'onmessage' event
@@ -196,7 +196,7 @@ node.log("url = " + url);
 	    startEventSource();		
 	    
 
-		this.send = function(itemname, topic, payload) {
+		this.control = function(itemname, topic, payload, okCb, errCb) {
 			var url;
 			
             if ( topic === "ItemUpdate" )
@@ -204,20 +204,31 @@ node.log("url = " + url);
             	url = getConnectionString() + "/rest/items/" + itemname + "/state";
             	method = request.put;
             }
-            else
+            else if ( topic === "ItemCommand" )
             {
             	url = getConnectionString() + "/rest/items/" + itemname;
             	method = request.post;
             }
+            else
+            {
+            	url = getConnectionString() + "/rest/items/" + itemname;
+            	method = request.get;
+            }
             
 			method({url: url, body: payload}, function(error, response, body) {
-        		if ( error ) {
-        			node.warn("request error '" + error + "' on '" + url + "'");
+        		if ( error )
+        		{
 					node.emit('CommunicationError', error);
+        			errCb("request error '" + error + "' on '" + url + "'");					
         		}
-        		else if ( Math.floor(response.statusCode / 100) != 2 ) {
-        			node.warn("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+        		else if ( Math.floor(response.statusCode / 100) != 2 )
+        		{
 					node.emit('CommunicationError', response);
+        			errCb("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+        		}
+        		else
+        		{
+        			okCb(body);
         		}
         	});
 			
@@ -377,7 +388,7 @@ node.log("url = " + url);
 		this.processCommError = function(error) {
 			
 			// update node's context variable
-			node.context().set("CommunicationError", "" + error);
+			node.context().set("CommunicationError", JSON.stringify(error));
 			
 			// update node's visual status
 			node.refreshNodeStatus();
@@ -454,7 +465,16 @@ node.log("url = " + url);
 	            // execute the appropriate http POST to send the command to openHAB
 				// and update the node's status according to the http response
 				
-				openhabController.send(config.itemname, topic, payload);
+				openhabController.control(config.itemname, topic, payload,
+									function(body){
+										// no body expected for a command or update
+	                					node.status({fill:"green", shape: "dot", text: " "});
+									},
+									function(err) {
+	                					node.status({fill:"red", shape: "ring", text: err});
+	                					node.warn(err);
+									}
+				);
 	            
 			}
 			else
@@ -471,4 +491,40 @@ node.log("url = " + url);
 	}
 	//
 	RED.nodes.registerType("openhab2-out", OpenHABOut);
+
+	/**
+	* ====== openhab2-get ===================
+	* Gets the item data when
+	* messages received via node-red flows
+	* =======================================
+	*/
+	function OpenHABGet(config) {
+		RED.nodes.createNode(this, config);
+		this.name = config.name;
+		var openhabController = RED.nodes.getNode(config.controller);
+		var node = this;
+		
+		// handle incoming node-red message
+		this.on("input", function(msg) {
+
+			openhabController.control(config.itemname, null, null,
+								function(body){
+									// no body expected for a command or update
+                					node.status({fill:"green", shape: "dot", text: " "});
+                					msg.payload = JSON.parse(body);
+                					node.send(msg);
+								},
+								function(err) {
+                					node.status({fill:"red", shape: "ring", text: err});
+                					node.warn(err);
+								}
+			);
+		});
+		this.on("close", function() {
+			node.log('close');
+		});
+	}
+	//
+	RED.nodes.registerType("openhab2-get", OpenHABGet);
+
 } 
