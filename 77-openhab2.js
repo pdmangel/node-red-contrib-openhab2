@@ -454,9 +454,9 @@ node.log("url = " + url);
             if ( payload != undefined )
 			{
             	// payload conversion
-				if ( (payload == "on") || (payload == true) )
+				if ( payload == "on"  )
 					payload = "ON";
-				else if ( (payload == "off") || (payload == false) )
+				else if ( payload == "off" )
 					payload = "OFF";
 				else
 					payload = "" + payload;
