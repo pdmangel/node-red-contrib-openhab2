@@ -22,7 +22,7 @@ var request = require('request');
 
 module.exports = function(RED) {
 
-	
+
 	/**
 	* ====== openhab2-controller ================
 	* Holds the hostname and port of the  
@@ -197,8 +197,8 @@ node.log("url = " + url);
 	    
 
 		this.control = function(itemname, topic, payload, okCb, errCb) {
-			var url;
-			
+			var url, method;
+
             if ( topic === "ItemUpdate" )
             {
             	url = getConnectionString() + "/rest/items/" + itemname + "/state";
@@ -244,8 +244,8 @@ node.log("url = " + url);
     RED.nodes.registerType("openhab2-controller", OpenHABControllerNode);
 
     // start a web service for enabling the node configuration ui to query for available openHAB items
-    
-    RED.httpNode.get("/openhab2/items/:host/:port",function(req, res, next) {
+
+    RED.httpAdmin.get("/openhab2/items/:host/:port",RED.auth.needsPermission("openhab2.items"),function(req, res) {
     	
     	var controllerAddress = req.params.host + ":" + req.params.port;
 
@@ -264,6 +264,37 @@ node.log("url = " + url);
     	
 
     });
+
+    RED.httpAdmin.post("/openhab2/inject/:id", RED.auth.needsPermission("openhab2.inject"), function (req, res) {
+        var node = RED.nodes.getNode(req.params.id);
+        if (node) {
+        	if (node.openhabController) {
+                var topic = (node.clickTopic && (node.clickTopic.length !== 0)) ? node.clickTopic : "ItemCommand";
+
+                var payload = null;
+				if (req.body.isDoubleClicked && req.body.isDoubleClicked === 'yes') {
+					payload = node.doubleClickPayload;
+				} else {
+					payload = node.singleClickPayload;
+                }
+                node.openhabController.control(
+					node.itemName,
+                    topic,
+					payload,
+					function (body) {
+                        res.sendStatus(200);
+					},
+					function (err) {
+						console.log(JSON.stringify(err));
+					}
+                );
+            } else {
+                res.sendStatus(500);
+            }
+        } else {
+            res.sendStatus(500);
+        }
+    });
 	   	
 	
 	/**
@@ -275,11 +306,16 @@ node.log("url = " + url);
 	function OpenHABIn(config) {
 		RED.nodes.createNode(this, config);
 		this.name = config.name;
-		var node = this;
-		var openhabController = RED.nodes.getNode(config.controller);
-		var itemName = config.itemname;
-		
-		if ( itemName != undefined ) itemName = itemName.trim();
+		this.clickTopic = config.clicktopic;
+        this.singleClickPayload = config.singleclickpayload;
+        this.doubleClickPayload = config.doubleclickpayload;
+        this.isClicked = false;
+        this.isDoubleClicked = false;
+        this.openhabController = RED.nodes.getNode(config.controller);
+        this.itemName = config.itemname;
+        var node = this;
+
+		if ( node.itemName != undefined ) node.itemName = node.itemName.trim();
 		
 		//node.log('OpenHABIn, config: ' + JSON.stringify(config));
 
@@ -312,7 +348,7 @@ node.log("url = " + url);
 				
 			    // inject the state in the node-red flow
 			    var msgid = RED.util.generateId();
-	            node.send([{_msgid:msgid, payload: currentState, item: itemName, event: "StateEvent"}, null]);
+	            node.send([{_msgid:msgid, payload: currentState, item: node.itemName, event: "StateEvent"}, null]);
 				
 			}			
 		};
@@ -320,13 +356,13 @@ node.log("url = " + url);
 		this.processRawEvent = function(event) {
 		    // inject the state in the node-red flow
 		    var msgid = RED.util.generateId();
-            node.send([null, {_msgid:msgid, payload: event, item: itemName, event: "RawEvent"}]);
+            node.send([null, {_msgid:msgid, payload: event, item: node.itemName, event: "RawEvent"}]);
 			
 		};
 		
 		node.context().set("currentState", "?");
-		openhabController.addListener(itemName + '/RawEvent', node.processRawEvent);
-		openhabController.addListener(itemName + '/StateEvent', node.processStateEvent);
+		node.openhabController.addListener(node.itemName + '/RawEvent', node.processRawEvent);
+        node.openhabController.addListener(node.itemName + '/StateEvent', node.processStateEvent);
 		node.refreshNodeStatus();		
 				
 		/* ===== Node-Red events ===== */
@@ -337,8 +373,8 @@ node.log("url = " + url);
 		});
 		this.on("close", function() {
 			node.log('close');
-			openhabController.removeListener(itemName + '/StateEvent', node.processStateEvent);
-			openhabController.removeListener(itemName + '/RawEvent', node.processRawEvent);
+            node.openhabController.removeListener(node.itemName + '/StateEvent', node.processStateEvent);
+            node.openhabController.removeListener(node.itemName + '/RawEvent', node.processRawEvent);
 		});
 		
 	}
