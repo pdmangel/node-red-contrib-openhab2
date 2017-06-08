@@ -22,7 +22,7 @@ var request = require('request');
 
 module.exports = function(RED) {
 
-	
+
 	/**
 	* ====== openhab2-controller ================
 	* Holds the hostname and port of the  
@@ -527,4 +527,165 @@ node.log("url = " + url);
 	//
 	RED.nodes.registerType("openhab2-get", OpenHABGet);
 
+    /**
+     * ====== openhab2-switch ===================
+     * Gets the item data when
+     * messages received via node-red flows
+     * =======================================
+     */
+    function OpenHABSwitch(config) {
+        RED.nodes.createNode(this, config);
+        this.name = config.name;
+        var openhabController = RED.nodes.getNode(config.controller);
+        var node = this;
+        this.rules = config.rules || [];
+        this.checkall = config.checkall || "true";
+        this.previousValue = null;
+        this.jsonata = require('jsonata');
+
+        this.operators = {
+            'eq': function(a, b) { return a == b; },
+            'neq': function(a, b) { return a != b; },
+            'lt': function(a, b) { return a < b; },
+            'lte': function(a, b) { return a <= b; },
+            'gt': function(a, b) { return a > b; },
+            'gte': function(a, b) { return a >= b; },
+            'btwn': function(a, b, c) { return a >= b && a <= c; },
+            'cont': function(a, b) { return (a + "").indexOf(b) != -1; },
+            'regex': function(a, b, c, d) { return (a + "").match(new RegExp(b,d?'i':'')); },
+            'true': function(a) { return a === true; },
+            'false': function(a) { return a === false; },
+            'null': function(a) { return (typeof a == "undefined" || a === null); },
+            'nnull': function(a) { return (typeof a != "undefined" && a !== null); },
+            'else': function(a) { return a === true; },
+            'ison': function(a) { return a == "ON"; },
+            'isoff': function(a) { return a == "OFF"; },
+            'isopen': function(a) { return a == "OPEN"; },
+            'isclosed': function(a) { return a == "CLOSED"; }
+        };
+
+
+        var valid = true;
+        for (var i = 0; i < this.rules.length; i += 1) {
+            var rule = this.rules[i];
+            if (!rule.vt) {
+                if (!isNaN(Number(rule.v))) {
+                    rule.vt = 'num';
+                } else {
+                    rule.vt = 'str';
+                }
+            }
+            if (rule.vt === 'num') {
+                if (!isNaN(Number(rule.v))) {
+                    rule.v = Number(rule.v);
+                }
+            } else if (rule.vt === "jsonata") {
+                try {
+                    rule.v = this.jsonata(rule.v);
+                } catch (err) {
+                    this.error("Invalid expression %s", {error: err.message});
+                    valid = false;
+                }
+            }
+            if (typeof rule.v2 !== 'undefined') {
+                if (!rule.v2t) {
+                    if (!isNaN(Number(rule.v2))) {
+                        rule.v2t = 'num';
+                    } else {
+                        rule.v2t = 'str';
+                    }
+                }
+                if (rule.v2t === 'num') {
+                    rule.v2 = Number(rule.v2);
+                } else if (rule.v2t === 'jsonata') {
+                    try {
+                        rule.v2 = this.jsonata(rule.v2);
+                    } catch (err) {
+                        this.error("Invalid expression %s", {error: err.message});
+                        valid = false;
+                    }
+                }
+            }
+        }
+
+        if (!valid) {
+            return;
+        }
+
+        // handle incoming node-red message
+        this.on("input", function(msg) {
+            openhabController.control(config.itemname, null, null,
+                function(body){
+                    // no body expected for a command or update
+                    node.status({fill:"green", shape: "dot", text: " "});
+                    var fetchedPayload = JSON.parse(body);
+                    var test = fetchedPayload.state;
+
+                    var onward = [];
+                    var elseflag = true;
+                    for (var i = 0; i < node.rules.length; i += 1) {
+                        var rule = node.rules[i];
+                        var v1, v2;
+                        if (rule.vt === 'prev') {
+                            v1 = node.previousValue;
+                        } else if (rule.vt === 'jsonata') {
+                            try {
+                                v1 = rule.v.evaluate({msg: msg});
+                            } catch (err) {
+                                node.error("Invalid expression %s", {error: err.message});
+                                return;
+                            }
+                        } else {
+                            try {
+                                v1 = RED.util.evaluateNodeProperty(rule.v, rule.vt, node, msg);
+                            } catch (err) {
+                                v1 = undefined;
+                            }
+                        }
+                        v2 = rule.v2;
+                        if (rule.v2t === 'prev') {
+                            v2 = node.previousValue;
+                        } else if (rule.v2t === 'jsonata') {
+                            try {
+                                v2 = rule.v2.evaluate({msg: msg});
+                            } catch (err) {
+                                node.error("Invalid expression %s", {error: err.message});
+                                return;
+                            }
+                        } else if (typeof v2 !== 'undefined') {
+                            try {
+                                v2 = RED.util.evaluateNodeProperty(rule.v2, rule.v2t, node, msg);
+                            } catch (err) {
+                                v2 = undefined;
+                            }
+                        }
+                        if (rule.t == "else") {
+                            test = elseflag;
+                            elseflag = true;
+                        }
+                        if (node.operators[rule.t](test, v1, v2, rule.case)) {
+                            onward.push(msg);
+                            elseflag = false;
+                            if (node.checkall == "false") {
+                                break;
+                            }
+                        } else {
+                            onward.push(null);
+                        }
+                    }
+                    node.previousValue = fetchedPayload.state;
+                    node.send(onward);
+                },
+                function(err) {
+                    node.status({fill:"red", shape: "ring", text: err});
+                    node.warn(err);
+                }
+            );
+        });
+        this.on("close", function() {
+            node.log('close');
+        });
+    }
+    //
+    RED.nodes.registerType("openhab2-switch", OpenHABSwitch);
 } 
