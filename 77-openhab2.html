@@ -66,6 +66,21 @@
     	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
     	</select>
     </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="fa fa-tasks"></i> Click Topic</label>
+    	<select id="node-input-topic" name="node-input-topic" style="width: 250px;">
+			<option value="ItemCommand">ItemCommand</option>
+			<option value="ItemUpdate">ItemUpdate</option>
+    	</select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-singleclickpayload"><i class="fa fa-tag"></i> Single Click Payload</label>
+        <input type="text" id="node-input-singleclickpayload" placeholder="e.g. ON">
+    </div>
+    <div class="form-row">
+        <label for="node-input-doubleclickpayload"><i class="fa fa-tag"></i> Double Click Payload</label>
+        <input type="text" id="node-input-doubleclickpayload" placeholder="e.g. OFF">
+    </div>
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-get">
@@ -146,6 +161,9 @@
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
         <li><b>Item :</b>Select the Item to monitor</li>
+        <li><b>Click Topic :</b> Optionally select "ItemCommand" or "ItemUpdate" to send when (double) clicking on the inject button.</li>
+        <li><b>Single Click Payload :</b> Optionally specify payload value to send on single clicking the inject button. The payload is send to the selected item at the openhab controller, it is not directly send as a message into your node-red flow.</li>
+        <li><b>Double Click Payload :</b> Optionally specify payload value to send on double clicking the inject button. The payload is send to the selected item at the openhab controller, it is not directly send as a message into your node-red flow.</li>
    	 </ul>
 	<p></p>
 
@@ -274,7 +292,7 @@
             itemSelectionEl.children().remove();
             
             if ( cntrlConfig ) {
-                $.getJSON("/openhab2/items/" + cntrlConfig.host + "/" + cntrlConfig.port)
+                $.getJSON("openhab2/items/" + cntrlConfig.host + "/" + cntrlConfig.port)
                   .done( function(data) {
                 	  
                 	 itemSelectionEl.children().remove();
@@ -319,9 +337,12 @@
         category: 'home automation',
         color: '#00cc00',
         defaults: {
-            name:      {value:""},
-		    controller:  {value:"", type:"openhab2-controller", required:true},
-		    itemname:  {value:"", required:true},
+            name:               {value:""},
+		    controller:         {value:"", type:"openhab2-controller", required:true},
+		    itemname:           {value:"", required:true},
+            clicktopic:         {value:"ItemCommand"},
+            singleclickpayload: {value: null},
+            doubleclickpayload: {value: null},
         },
         inputs: 0,
         outputs: 2,
@@ -332,6 +353,45 @@
         },
         oneditprepare: function() {
         	openhabEditPrepare(this);
+        },
+        button: {
+            onclick: function () {
+                var node = this;
+
+                if (node.isClicked) {
+                    node.isDoubleClicked = true;
+                    node.isClicked = false;
+                } else {
+                    node.isClicked = true;
+                    setTimeout(
+                        function () {
+                            var label = (node.name||node.itemname).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                            $.ajax({
+                                url: "openhab2/inject/" + node.id,
+                                type:"POST",
+                                data: {isDoubleClicked: (node.isDoubleClicked ? "yes" : "no")},
+                                success: function(resp) {
+                                    RED.notify("Succesfully send payload to item " + label + ".", "success");
+                                },
+                                error: function(jqXHR,textStatus,errorThrown) {
+                                    if (jqXHR.status == 404) {
+                                        RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.not-deployed")}),"error");
+                                    } else if (jqXHR.status == 500) {
+                                        RED.notify(node._("common.notification.error",{message:"Failed to send payload to item " + label + "."}),"error");
+                                    } else if (jqXHR.status == 0) {
+                                        RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.no-response")}),"error");
+                                    } else {
+                                        RED.notify(node._("common.notification.error",{message:node._("common.notification.errors.unexpected",{status:jqXHR.status,message:textStatus})}),"error");
+                                    }
+                                }
+                            });
+                            node.isClicked = false;
+                            node.isDoubleClicked = false;
+                        },
+                        500
+                    );
+                }
+            }
         }
     });
 </script>
