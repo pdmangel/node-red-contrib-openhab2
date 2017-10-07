@@ -176,7 +176,7 @@
     <ul>
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
-        <li><b>Item :</b>Select the Item to monitor</li>
+        <li><b>Item :</b>Optionally select the Item to get. If specified, it overrides the topic specified in the incoming message.</li>
    	 </ul>
 	<p></p>
 
@@ -231,7 +231,7 @@
     <ul>
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
-        <li><b>Item :</b> Select the Item to monitor</li>
+        <li><b>Item :</b> Optionally select the Item to monitor. If specified, it overrides the topic specified in the incoming message.</li>
         <li><b>Topic :</b> Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message.</li>
         <li><b>Payload :</b> Optionally specify the command or update value to send to the selected item. If specified, it overrides the value specified in the incoming message.</li>
    	 </ul>
@@ -265,7 +265,7 @@
 <script type="text/javascript">
 	// some code chared by openhab2-in and openhab2-out
 	
-	function openhabEditPrepare(node) {
+	function openhabEditPrepare(node, allowEmpty) {
 		
     	function updateOpenhabItemSelection(cntrlConfig, itemName) {
     		
@@ -288,6 +288,8 @@
                     	 else
                     		 return 0;
                      });
+                     if ( allowEmpty )
+                    	 itemSelectionEl.append('<option value=""></option>');
                      items.forEach(function(item) {
                     	 itemSelectionEl.append('<option>' + item.name + '</option>');
  							var it = itemSelectionEl.find('option').last();
@@ -331,7 +333,7 @@
             return(this.name||this.itemname||"openhab2 in");
         },
         oneditprepare: function() {
-        	openhabEditPrepare(this);
+        	openhabEditPrepare(this, false);
         }
     });
 </script>
@@ -343,7 +345,7 @@
         defaults: {
             name:      {value:""},
 		    controller:  {value:"", type:"openhab2-controller", required:true},
-		    itemname:  {value:"", required:true},
+		    itemname:  {value:"", required:false},
         },
         inputs: 1,
         outputs: 1,
@@ -353,7 +355,7 @@
             return(this.name||this.itemname||"openhab2 get");
         },
         oneditprepare: function() {
-        	openhabEditPrepare(this);
+        	openhabEditPrepare(this, true);
         }
     });
 </script>
@@ -385,7 +387,7 @@
         defaults: {
             name:      {value:""},
 		    controller:  {value:"", type:"openhab2-controller", required:true},
-		    itemname:  {value:"", required:true},
+		    itemname:  {value:"", required:false},
 		    topic: {value:"", required:false},
 		    payload:  {value:"", required:false}
 		},
@@ -396,7 +398,7 @@
             return(this.name||this.itemname||"openhab2 out");
         },
         oneditprepare: function() {
-        	openhabEditPrepare(this);
+        	openhabEditPrepare(this, true);
         }
     });
 </script>
