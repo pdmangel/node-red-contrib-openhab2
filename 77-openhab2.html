@@ -176,7 +176,7 @@
     <ul>
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
-        <li><b>Item :</b>Optionally select the Item to get. If specified, it overrides the topic specified in the incoming message.</li>
+        <li><b>Item :</b> Optionally select the Item to address. If specified, it overrides the item specified in the incoming message.</li>
    	 </ul>
 	<p></p>
 
@@ -196,6 +196,11 @@
         <li><b>Controller :</b> Select the openHAB controller</li>
    	 </ul>
 	<p></p>
+	<b>Messages accepted by NodeRED flows</b>
+    <ul>
+        <li><code>msg.item</code> optionally the Item to address</li>
+   	</ul>
+
 	<b>Messages injected in NodeRED flows (3 channels)</b>
 
     <ul>
@@ -231,13 +236,14 @@
     <ul>
         <li><b>Name :</b> Optionally specify a name</li>
         <li><b>Controller :</b> Select the openHAB controller</li>
-        <li><b>Item :</b> Optionally select the Item to monitor. If specified, it overrides the topic specified in the incoming message.</li>
+        <li><b>Item :</b> Optionally select the Item to address. If specified, it overrides the item specified in the incoming message.</li>
         <li><b>Topic :</b> Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message.</li>
         <li><b>Payload :</b> Optionally specify the command or update value to send to the selected item. If specified, it overrides the value specified in the incoming message.</li>
    	 </ul>
 	<p></p>
 	<b>Messages accepted by NodeRED flows</b>
     <ul>
+        <li><code>msg.item</code> optionally the Item to address</li>
         <li><code>msg.topic</code> optionally "ItemCommand", "ItemUpdate"</li>
         <li><code>msg.payload</code> optionally the fixed command or update value to send to the selected item</li>
    	 </ul>
