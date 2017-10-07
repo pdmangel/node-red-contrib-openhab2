@@ -84,6 +84,31 @@
     </div>
 </script>
 
+<script type="text/x-red" data-template-name="openhab2-switch">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-controller"><i class="fa fa-globe"></i> Controller</label>
+        <input type="text" id="node-input-controller">
+    </div>
+    <div class="form-row">
+        <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
+    	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
+    	</select>
+    </div>
+    <div class="form-row node-input-rule-container-row">
+        <ol id="node-input-rule-container"></ol>
+    </div>
+    <div class="form-row">
+        <select id="node-input-checkall" style="width:100%; margin-right:5px;">
+            <option value="true">checking all rules</option>
+            <option value="false">stopping after first match</option>
+        </select>
+    </div>
+</script>
+
 <script type="text/x-red" data-template-name="openhab2-monitor">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -185,6 +210,24 @@
     <ul>
         <li><code>msg.payload</code> : the item object (name, label, state, ...)</li>
   	</ul>
+</script>
+
+<script type="text/x-red" data-help-name="openhab2-switch">
+    <p>A node to route messages based on state of an openHAB Item.</p>
+	<p></p>
+	<b>Configuration</b>
+    <ul>
+        <li><b>Name :</b> Optionally specify a name</li>
+        <li><b>Controller :</b> Select the openHAB controller</li>
+        <li><b>Item :</b> Select the Item to fetch the state from for rule processing</li>
+        <li><b>Rules :</b> Define the rules for message routing</li>
+   	 </ul>
+	<p></p>
+	<b>Rule processing</b>
+    <p>When a message arrives, the state of the selected item is fetched and evaluated against each
+    of the defined rules. The message is then sent to the output of <i>all</i>
+    rules that pass.</p>
+    <p><b>Note</b>: the <i>otherwise</i> rule applies as a "not any of" the rules preceding it.</p>
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-monitor">
@@ -362,6 +405,294 @@
         },
         oneditprepare: function() {
         	openhabEditPrepare(this, true);
+        }
+    });
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('openhab2-switch',{
+        category: 'home automation',
+        color: '#00cc00',
+        defaults: {
+            name:       {value:""},
+            controller: {value:"", type:"openhab2-controller", required:true},
+            itemname:   {value:"", required:true},
+            rules:      {value:[{t:"ison", v:""}]},
+            checkall:   {value:"true", required:true},
+            outputs:    {value:1},
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "node-red-contrib-openhab2.png",
+        label: function () {
+            if (this.label || this.name) {
+//                return(this.name||this.itemname||"openhab2 switch");
+                return this.label || this.name;
+            }
+
+            var itemname = this.itemname;
+            var label = itemname;
+            if (this.rules.length > 0 && this.rules.length <= 2) {
+                if (this.rules.length === 1
+                    || this.rules[1].t === "else"
+                ) {
+                    var i = this.rules.length - 1;
+                    var ruleValue = this.rules[i].v;
+
+                    switch (this.rules[i].t) {
+                        case "neq":
+                            label += " != "
+                            break;
+                        case "lt":
+                            label += " < "
+                            break;
+                        case "lte":
+                            label += " <= "
+                            break;
+                        case "gt":
+                            label += " > "
+                            break;
+                        case "gte":
+                            label += " >= "
+                            break;
+                        case "btwn":
+                            label = ruleValue + " < " + itemname + " < " + this.rules[i].v2;
+                            break;
+                        case "cont":
+                            label += " contains "
+                            break;
+                        case "true":
+                            ruleValue = "true"
+                            break;
+                        case "false":
+                            ruleValue = "false"
+                            break;
+                        case "null":
+                            ruleValue = "null"
+                            break;
+                        case "nnull":
+                            label += " != "
+                            ruleValue = "null"
+                            break;
+                        case "ison":
+                            ruleValue = "ON"
+                            break;
+                        case "isoff":
+                            ruleValue = "OFF"
+                            break;
+                        case "isopen":
+                            ruleValue = "OPEN"
+                            break;
+                        case "isclosed":
+                            ruleValue = "CLOSED"
+                            break;
+                    }
+                    if (label === itemname) {
+                        label += " = ";
+                    }
+                    label += ruleValue;
+                }
+            } else {
+                label += " (" + this.rules.length + ")";
+            }
+
+            return label;
+        },
+        oneditprepare: function() {
+            openhabEditPrepare(this);
+            var node = this;
+            var previousValueType = {value:"prev",label:"Previous",hasValue:false};
+
+            var operators = [
+                {v:"eq",t:"=="},
+                {v:"neq",t:"!="},
+                {v:"lt",t:"<"},
+                {v:"lte",t:"<="},
+                {v:"gt",t:">"},
+                {v:"gte",t:">="},
+                {v:"btwn",t:"between"},
+                {v:"cont",t:"contains"},
+                {v:"regex",t:"regex"},
+                {v:"true",t:"true"},
+                {v:"false",t:"false"},
+                {v:"null",t:"null"},
+                {v:"nnull",t:"not null"},
+                {v:"else",t:"otherwise"},
+                {v:"ison",t:"is on"},
+                {v:"isoff",t:"is off"},
+                {v:"isopen",t:"is open"},
+                {v:"isclosed",t:"is closed"}
+            ];
+
+            var andLabel = "and";
+            var caseLabel = "ignore case";
+
+            function resizeRule(rule) {
+                var newWidth = rule.width();
+                var selectField = rule.find("select");
+                var type = selectField.val()||"";
+                var valueField = rule.find(".node-input-rule-value");
+                var btwnField1 = rule.find(".node-input-rule-btwn-value");
+                var btwnField2 = rule.find(".node-input-rule-btwn-value2");
+                var selectWidth;
+                if (type.length < 4) {
+                    selectWidth = 60;
+                } else if (type === "regex") {
+                    selectWidth = 147;
+                } else {
+                    selectWidth = 120;
+                }
+                selectField.width(selectWidth);
+                if (type === "btwn") {
+                    btwnField1.typedInput("width",(newWidth-selectWidth-70));
+                    btwnField2.typedInput("width",(newWidth-selectWidth-70));
+                } else {
+                    if (hasNoValue(type)) {
+                        // valueField.hide();
+                    } else {
+                        valueField.typedInput("width",(newWidth-selectWidth-70));
+                    }
+                }
+            }
+
+            $("#node-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
+                addItem: function(container,i,opt) {
+                    if (!opt.hasOwnProperty('r')) {
+                        opt.r = {};
+                    }
+                    var rule = opt.r;
+                    if (!rule.hasOwnProperty('t')) {
+                        rule.t = 'eq';
+                    }
+                    var row = $('<div/>').appendTo(container);
+                    var row2 = $('<div/>',{style:"padding-top: 5px; padding-left: 175px;"}).appendTo(container);
+                    var row3 = $('<div/>',{style:"padding-top: 5px; padding-left: 102px;"}).appendTo(container);
+                    var selectField = $('<select/>',{style:"width:120px; margin-left: 5px; text-align: center;"}).appendTo(row);
+                    for (var d in operators) {
+                        selectField.append($("<option></option>").val(operators[d].v).text(operators[d].t));
+                    }
+                    var valueField = $('<input/>',{class:"node-input-rule-value",type:"text",style:"margin-left: 5px;"}).appendTo(row).typedInput({default:'str',types:['msg','flow','global','str','num','jsonata',previousValueType]});
+                    var btwnValueField = $('<input/>',{class:"node-input-rule-btwn-value",type:"text",style:"margin-left: 5px;"}).appendTo(row).typedInput({default:'num',types:['msg','flow','global','str','num','jsonata',previousValueType]});
+                    var btwnAndLabel = $('<span/>',{class:"node-input-rule-btwn-label"}).text(" "+andLabel+" ").appendTo(row3);
+                    var btwnValue2Field = $('<input/>',{class:"node-input-rule-btwn-value2",type:"text",style:"margin-left:2px;"}).appendTo(row3).typedInput({default:'num',types:['msg','flow','global','str','num','jsonata',previousValueType]});
+                    var finalspan = $('<span/>',{style:"float: right;margin-top: 6px;"}).appendTo(row);
+                    finalspan.append(' &#8594; <span class="node-input-rule-index">'+(i+1)+'</span> ');
+                    var caseSensitive = $('<input/>',{id:"node-input-rule-case-"+i,class:"node-input-rule-case",type:"checkbox",style:"width:auto;vertical-align:top"}).appendTo(row2);
+                    $('<label/>',{for:"node-input-rule-case-"+i,style:"margin-left: 3px;"}).text(caseLabel).appendTo(row2);
+                    selectField.change(function() {
+                        resizeRule(container);
+                        var type = selectField.val();
+                        if (type === "btwn") {
+                            valueField.typedInput('hide');
+                            btwnValueField.typedInput('show');
+                        } else {
+                            btwnValueField.typedInput('hide');
+                            if (hasNoValue(type)) {
+                                valueField.typedInput('hide');
+                            } else {
+                                valueField.typedInput('show');
+                            }
+                        }
+                        if (type === "regex") {
+                            row2.show();
+                            row3.hide();
+                        } else if (type === "btwn"){
+                            row2.hide();
+                            row3.show();
+                        } else {
+                            row2.hide();
+                            row3.hide();
+                        }
+                    });
+                    selectField.val(rule.t);
+                    if (rule.t == "btwn") {
+                        btwnValueField.typedInput('value',rule.v);
+                        btwnValueField.typedInput('type',rule.vt||'num');
+                        btwnValue2Field.typedInput('value',rule.v2);
+                        btwnValue2Field.typedInput('type',rule.v2t||'num');
+                    } else if (typeof rule.v != "undefined") {
+                        valueField.typedInput('value',rule.v);
+                        valueField.typedInput('type',rule.vt||'str');
+                    }
+                    if (rule.case) {
+                        caseSensitive.prop('checked',true);
+                    } else {
+                        caseSensitive.prop('checked',false);
+                    }
+                    selectField.change();
+                },
+                removeItem: function(opt) {
+                    if (opt.hasOwnProperty('i')) {
+                        var removedList = $("#node-input-rule-container").data('removedList')||[];
+                        removedList.push(opt.i);
+                        $("#node-input-rule-container").data('removedList',removedList);
+                    }
+
+                    var rules = $("#node-input-rule-container").editableList('items');
+                    rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
+                },
+                resizeItem: resizeRule,
+                sortItems: function(rules) {
+                    var rules = $("#node-input-rule-container").editableList('items');
+                    rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
+                },
+                sortable: true,
+                removable: true
+            });
+
+            for (var i=0;i<this.rules.length;i++) {
+                var rule = this.rules[i];
+                $("#node-input-rule-container").editableList('addItem',{r:rule,i:i});
+            }
+        },
+        oneditsave: function() {
+            var rules = $("#node-input-rule-container").editableList('items');
+            var ruleset;
+            var node = this;
+            node.rules = [];
+            var changedOutputs = {};
+            var removedList = $("#node-input-rule-container").data('removedList')||[];
+            removedList.forEach(function(i) {
+                changedOutputs[i] = -1;
+            });
+            rules.each(function(i) {
+                var ruleData = $(this).data('data');
+                var rule = $(this);
+                var type = rule.find("select").val();
+                var r = {t:type};
+                if (!hasNoValue(type)) {
+                    if (type === "btwn") {
+                        r.v = rule.find(".node-input-rule-btwn-value").typedInput('value');
+                        r.vt = rule.find(".node-input-rule-btwn-value").typedInput('type');
+                        r.v2 = rule.find(".node-input-rule-btwn-value2").typedInput('value');
+                        r.v2t = rule.find(".node-input-rule-btwn-value2").typedInput('type');
+                    } else {
+                        r.v = rule.find(".node-input-rule-value").typedInput('value');
+                        r.vt = rule.find(".node-input-rule-value").typedInput('type');
+                    }
+                    if (type === "regex") {
+                        r.case = rule.find(".node-input-rule-case").prop("checked");
+                    }
+                }
+                if (ruleData.hasOwnProperty('i')) {
+                    if (ruleData.i !== i) {
+                        changedOutputs[ruleData.i] = i;
+                    }
+                }
+                node.rules.push(r);
+            });
+            this._outputs = changedOutputs;
+            this.outputs = node.rules.length;
+        },
+        oneditresize: function(size) {
+            var rows = $("#dialog-form>div:not(.node-input-rule-container-row)");
+            var height = size.height;
+            for (var i=0;i<rows.size();i++) {
+                height -= $(rows[i]).outerHeight(true);
+            }
+            var editorRow = $("#dialog-form>div.node-input-rule-container-row");
+            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+            $("#node-input-rule-container").editableList('height',height);
         }
     });
 </script>
