@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  
+
 -->
 <script type="text/x-red" data-template-name="openhab2-controller">
     <div class="form-row">
@@ -253,7 +253,7 @@
 			port: {value:8080,	required:false /*,	validate:RED.validators.number() */},
 			path: {value:"",	required:false},
 		    username: {value:"", required:false},
-		    password:  {value:"", required:false}			
+		    password:  {value:"", required:false}
 		},
 		label: function() {
 			return this.name;
@@ -264,22 +264,22 @@
 
 <script type="text/javascript">
 	// some code chared by openhab2-in and openhab2-out
-	
+
 	function openhabEditPrepare(node) {
-		
+
     	function updateOpenhabItemSelection(cntrlConfig, itemName) {
-    		
+
     		var itemSelectionEl = $('#node-input-itemname');
-    		
+
             itemSelectionEl.children().remove();
-            
+
             if ( cntrlConfig ) {
-                $.getJSON("/openhab2/items/" + cntrlConfig.host + "/" + cntrlConfig.port)
+                $.getJSON("/openhab2/items/" + cntrlConfig.id)
                   .done( function(data) {
-                	  
+
                 	 itemSelectionEl.children().remove();
                      var items = data;
-                     
+
                      items.sort(function(a,b) {
                     	 if ( a.name < b.name )
                     		 return -1;
@@ -303,13 +303,13 @@
                   });
             }
 		}
-    	
+
     	updateOpenhabItemSelection(RED.nodes.node(node.controller), node.itemname);
-    	
+
 		$('#node-input-controller').change(function(ev) {
 	        updateOpenhabItemSelection(RED.nodes.node($('#node-input-controller').val()), $('#node-input-').val() || node.itemname);
 		});
-                
+
 
 	}
 </script>
@@ -327,7 +327,7 @@
         outputs: 2,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
-        	
+
             return(this.name||this.itemname||"openhab2 in");
         },
         oneditprepare: function() {
@@ -349,7 +349,7 @@
         outputs: 1,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
-        	
+
             return(this.name||this.itemname||"openhab2 get");
         },
         oneditprepare: function() {
@@ -370,7 +370,7 @@
         outputs: 3,
         icon: "node-red-contrib-openhab2.png",
         label: function() {
-        	
+
             return(this.name||"openhab2 monitor");
         },
         oneditprepare: function() {
