@@ -447,25 +447,17 @@ node.log("url = " + url);
 		// handle incoming node-red message
 		this.on("input", function(msg) {
 
-			// if a payload is specified in the node's configuration, it overrides the payload specified in the message
-            var payload = (config.payload && (config.payload.length != 0)) ? config.payload : msg.payload;
+			// if a item/topic/payload is specified in the node's configuration, it overrides the item/topic/payload specified in the message
+            var item = (config.itemname && (config.itemname.length != 0)) ? config.itemname : msg.item;
             var topic = (config.topic && (config.topic.length != 0)) ? config.topic : msg.topic;
+            var payload = (config.payload && (config.payload.length != 0)) ? config.payload : msg.payload;
 			
             if ( payload != undefined )
-			{
-            	// payload conversion
-				if ( payload == "on"  )
-					payload = "ON";
-				else if ( payload == "off" )
-					payload = "OFF";
-				else
-					payload = "" + payload;
-	            //node.log("payload = " + payload);
-				
+			{				
 	            // execute the appropriate http POST to send the command to openHAB
 				// and update the node's status according to the http response
 				
-				openhabController.control(config.itemname, topic, payload,
+				openhabController.control(item, topic, payload,
 									function(body){
 										// no body expected for a command or update
 	                					node.status({fill:"green", shape: "dot", text: " "});
@@ -507,7 +499,9 @@ node.log("url = " + url);
 		// handle incoming node-red message
 		this.on("input", function(msg) {
 
-			openhabController.control(config.itemname, null, null,
+            var item = (config.itemname && (config.itemname.length != 0)) ? config.itemname : msg.item;
+
+            openhabController.control(item, null, null,
 								function(body){
 									// no body expected for a command or update
                 					node.status({fill:"green", shape: "dot", text: " "});

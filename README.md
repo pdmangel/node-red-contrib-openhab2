@@ -76,13 +76,14 @@ E.g. "ON", "OFF", "REFRESH", ...
 *Configuration:*
 - Name : Optionally specify a name
 - Controller : Select the openHAB controller
-- Item : Select the Item to address
+- Item :  Optionally select the Item to address. If specified, it overrides the item specified in the incoming message.
 - Topic : Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message. 
 - Payload : Optionally specify the command or update value to send to the selected item. If specified, it overrides the payload specified in the incoming message.
 
 
 *Messages accepted by NodeRED flows:*
 
+- <kbd>msg.item</kbd> : optionally the Item to address
 - <kbd>msg.topic</kbd> :  optionally "ItemCommand", "ItemUpdate"
 - <kbd>msg.payload</kbd> : optionally the fixed command or update value to send to the selected item
 
@@ -93,7 +94,11 @@ Gets an openHAB Item on an input message.
 *Configuration:*
 - Name : Optionally specify a name
 - Controller : Select the openHAB controller
-- Item : Select the Item to monitor
+- Item : Optionally select the Item to get. If specified, it overrides the item specified in the incoming message.
+
+*Messages accepted by NodeRED flows:*
+
+- <kbd>msg.item</kbd> : optionally the Item to address
 
 *Messages injected in NodeRED flows (1 channel):*
 
