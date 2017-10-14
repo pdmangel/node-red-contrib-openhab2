@@ -240,31 +240,31 @@ node.log("url = " + url);
 			node.emit('CommunicationStatus', "OFF");
 		});
 
+    this.items = function(okCb) {
+			var url = getConnectionString() + '/rest/items';
+			request.get(url, function(error, response, body) {
+				if ( error ) {
+					node.error("request error '" + JSON.stringify(error) + "' on '" + url + "'");
+				}
+				else if ( response.statusCode != 200 ) {
+					node.error("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+				}
+				else {
+					okCb(body);
+				}
+			});
+		};
 	}
     RED.nodes.registerType("openhab2-controller", OpenHABControllerNode);
 
-    // start a web service for enabling the node configuration ui to query for available openHAB items
+  // start a web service for enabling the node configuration ui to query for available openHAB items
     
-    RED.httpNode.get("/openhab2/items/:host/:port",function(req, res, next) {
-    	
-    	var controllerAddress = req.params.host + ":" + req.params.port;
-
-    	var url = "http://" + controllerAddress + "/rest/items";
-        request.get(url, function(error, response, body) {
-    		if ( error ) {
-    			res.send("request error '" + JSON.stringify(error) + "' on '" + url + "'");
-    		}
-    		else if ( response.statusCode != 200 ) {
-    			res.send("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-    		}
-    		else {
-    			res.send(body);
-    		}
-       	});
-    	
-
-    });
-	   	
+	RED.httpNode.get("/openhab2/items/:controller",function(req, res, next) {
+		var openhabController = RED.nodes.getNode(req.params.controller);
+		openhabController.items(function(body) {
+			res.send(body);
+		});
+	});
 	
 	/**
 	* ====== openhab2-in ========================
