@@ -193,8 +193,11 @@ node.log("url = " + url);
 
 		}
 		
-	    startEventSource();		
-	    
+	    //startEventSource();
+		// give the system few seconds 
+		setTimeout(function() {
+			startEventSource();
+		}, 5000);
 
 		this.control = function(itemname, topic, payload, okCb, errCb) {
 			var url;
@@ -240,7 +243,7 @@ node.log("url = " + url);
 			node.emit('CommunicationStatus', "OFF");
 		});
 
-    this.items = function(okCb) {
+		this.items = function(okCb) {
 			var url = getConnectionString() + '/rest/items';
 			request.get(url, function(error, response, body) {
 				if ( error ) {
