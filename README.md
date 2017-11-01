@@ -105,3 +105,4 @@ Gets an openHAB Item on an input message.
 Channel 1:
 The input message with addition of :
 - <kbd>msg.payload</kbd> : the item object (name, label, state, ...)
+- <kbd>msg.payload_in</kbd> : copy of incoming message's payload
