@@ -280,7 +280,17 @@
             itemSelectionEl.children().remove();
 
             if ( cntrlConfig ) {
-                $.getJSON("/openhab2/items/" + cntrlConfig.id)
+            	var config = {
+           			name: cntrlConfig.name,
+           			protocol: cntrlConfig.protocol,
+           			host: cntrlConfig.host,
+           			port: cntrlConfig.port,
+           			path: cntrlConfig.path,
+           			username: cntrlConfig.username,
+           			password: cntrlConfig.password
+            	}
+            	console.log("config = " + JSON.stringify(config));
+                $.getJSON("/openhab2/items", config)
                   .done( function(data) {
 
                 	 itemSelectionEl.children().remove();
@@ -307,7 +317,7 @@
                       //itemSelectionEl.append('<option value="' + 1 + '">' + e1 + '</option>');
                       //itemSelectionEl.append('<option value="' + 2 + '">' + e2 + '</option>');
                       //itemSelectionEl.append('<option value="' + 3 + '">' + e3 + '</option>');
-                    console.log("error");
+                    console.log("error : " + JSON.stringify(e1));
                   });
             }
 		}

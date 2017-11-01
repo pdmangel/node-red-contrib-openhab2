@@ -20,6 +20,46 @@
 var EventSource = require('@joeybaker/eventsource');
 var request = require('request');
 
+function getConnectionString(config) {
+	var url;
+	
+	if ( config.protocol )
+		url = config.protocol;
+	else
+		url = "http";
+	
+	url += "://";
+
+	if ( (config.username != undefined) && (config.username.trim().length != 0) )
+	{
+		url += config.username.trim();
+		
+		if ( (config.password != undefined) && (config.password.length != 0) )
+		{
+			url += ":" + config.password;
+		}
+		url += "@";
+	}
+	url +=  config.host;
+	
+	if ( (config.port != undefined) && (config.port.trim().length != 0) )
+	{
+		url += ":" + config.port.trim();
+	}
+
+	if ( (config.path != undefined) && (config.path.trim().length != 0) )
+	{
+		var path = config.path.trim();
+
+		path = path.replace(/^[\/]+/, '');
+		path = path.replace(/[\/]+$/, '');
+		
+		url += "/" + path;
+	}
+	
+	return url;
+}
+
 module.exports = function(RED) {
 
 	
@@ -39,50 +79,10 @@ module.exports = function(RED) {
 		// this controller node handles all communication with the configured openhab server
 
 		
-		function getConnectionString() {
-			var url;
+		function getStateOfItems(config) {
+			node.log("getStateOfItems : config = " + JSON.stringify(config));
 			
-			if ( config.protocol )
-				url = config.protocol;
-			else
-				url = "http";
-			
-			url += "://";
-
-			if ( (config.username != undefined) && (config.username.trim().length != 0) )
-			{
-				url += config.username.trim();
-				
-				if ( (config.password != undefined) && (config.password.length != 0) )
-				{
-					url += ":" + config.password;
-				}
-				url += "@";
-			}
-			url +=  config.host;
-			
-			if ( (config.port != undefined) && (config.port.trim().length != 0) )
-			{
-				url += ":" + config.port.trim();
-			}
-
-			if ( (config.path != undefined) && (config.path.trim().length != 0) )
-			{
-				var path = config.path.trim();
-
-				path = path.replace(/^[\/]+/, '');
-				path = path.replace(/[\/]+$/, '');
-				
-				url += "/" + path;
-			}
-			
-node.log("url = " + url);
-			return url;
-		}
-
-		function getStateOfItems() {
-			
-            var url = getConnectionString() + "/rest/items";
+            var url = getConnectionString(config) + "/rest/items";
 			request.get(url, function(error, response, body) {
             	// handle communication errors
         		if ( error ) {
@@ -95,7 +95,7 @@ node.log("url = " + url);
         			node.warn("response status 503 on '" + url + "' .... retry later");
 					node.emit('CommunicationError', response );
 					setTimeout(function() {
-						getStateOfItems();
+						getStateOfItems(config);
 					}, 5000);
         		}
         		else if ( response.statusCode != 200 ) {
@@ -121,14 +121,14 @@ node.log("url = " + url);
 			
 			// register for all item events
 			
-			node.es= new EventSource(getConnectionString() + "/rest/events?topics=smarthome/items", {});
+			node.es= new EventSource(getConnectionString(config) + "/rest/events?topics=smarthome/items", {});
 			
 			// handle the 'onopen' event
 			
 			node.es.onopen = function(event) {
 
 				// get the current state of all items
-	            getStateOfItems();
+	            getStateOfItems(config);
 	       	};
 
 			// handle the 'onmessage' event
@@ -204,17 +204,17 @@ node.log("url = " + url);
 			
             if ( topic === "ItemUpdate" )
             {
-            	url = getConnectionString() + "/rest/items/" + itemname + "/state";
+            	url = getConnectionString(config) + "/rest/items/" + itemname + "/state";
             	method = request.put;
             }
             else if ( topic === "ItemCommand" )
             {
-            	url = getConnectionString() + "/rest/items/" + itemname;
+            	url = getConnectionString(config) + "/rest/items/" + itemname;
             	method = request.post;
             }
             else
             {
-            	url = getConnectionString() + "/rest/items/" + itemname;
+            	url = getConnectionString(config) + "/rest/items/" + itemname;
             	method = request.get;
             }
             
@@ -243,30 +243,26 @@ node.log("url = " + url);
 			node.emit('CommunicationStatus', "OFF");
 		});
 
-		this.items = function(okCb) {
-			var url = getConnectionString() + '/rest/items';
-			request.get(url, function(error, response, body) {
-				if ( error ) {
-					node.error("request error '" + JSON.stringify(error) + "' on '" + url + "'");
-				}
-				else if ( response.statusCode != 200 ) {
-					node.error("response error '" + JSON.stringify(response) + "' on '" + url + "'");
-				}
-				else {
-					okCb(body);
-				}
-			});
-		};
 	}
     RED.nodes.registerType("openhab2-controller", OpenHABControllerNode);
 
   // start a web service for enabling the node configuration ui to query for available openHAB items
     
-	RED.httpNode.get("/openhab2/items/:controller",function(req, res, next) {
-		var openhabController = RED.nodes.getNode(req.params.controller);
-		openhabController.items(function(body) {
-			res.send(body);
+	RED.httpNode.get("/openhab2/items",function(req, res, next) {
+		var config = req.query;
+		var url = getConnectionString(config) + '/rest/items';
+		request.get(url, function(error, response, body) {
+			if ( error ) {
+				res.send("request error '" + JSON.stringify(error) + "' on '" + url + "'");
+			}
+			else if ( response.statusCode != 200 ) {
+				res.send("response error '" + JSON.stringify(response) + "' on '" + url + "'");
+			}
+			else {
+				res.send(body);
+			}
 		});
+
 	});
 	
 	/**
@@ -508,6 +504,7 @@ node.log("url = " + url);
 								function(body){
 									// no body expected for a command or update
                 					node.status({fill:"green", shape: "dot", text: " "});
+                					msg.payload_in = msg.payload;
                 					msg.payload = JSON.parse(body);
                 					node.send(msg);
 								},
