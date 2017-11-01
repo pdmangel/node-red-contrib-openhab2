@@ -218,7 +218,7 @@ node.log("url = " + url);
             	method = request.get;
             }
             
-			method({url: url, body: payload}, function(error, response, body) {
+			method({url: url, body: String(payload)}, function(error, response, body) {
         		if ( error )
         		{
 					node.emit('CommunicationError', error);
@@ -467,7 +467,7 @@ node.log("url = " + url);
 									},
 									function(err) {
 	                					node.status({fill:"red", shape: "ring", text: err});
-	                					node.warn(err);
+	                					node.warn(String(err));
 									}
 				);
 	            
