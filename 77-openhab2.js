@@ -71,6 +71,10 @@ module.exports = function(RED) {
 	*/
 	function OpenHABControllerNode(config) {
 		RED.nodes.createNode(this, config);
+		
+		this.getConfig = function () {
+			return config;
+		}
 
 		var node = this;
 
@@ -521,4 +525,102 @@ module.exports = function(RED) {
 	//
 	RED.nodes.registerType("openhab2-get", OpenHABGet);
 
+	/**
+	* ====== openhab2-events ===================
+	* monitors opnHAB events
+	* =======================================
+	*/
+	function OpenHABEvents(config) {
+		RED.nodes.createNode(this, config);
+		this.name = config.name;
+		var openhabController = RED.nodes.getNode(config.controller);
+		var node = this;
+		
+		function startEventSource() {
+			
+			// register for all item events
+			
+			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=smarthome/*", {});
+			
+			// handle the 'onopen' event
+			
+			node.status({fill:"green", shape: "ring", text: " "});
+			
+			node.es.onopen = function(event) {
+		        node.status({fill:"green", shape: "dot", text: " "});
+	       	};
+
+			// handle the 'onmessage' event
+			
+	       	node.es.onmessage = function(msg) {
+			    //node.log(msg.data);
+				try
+				{
+        			// update the node status with the Item's new state
+				    msg = JSON.parse(msg.data);
+				    if ( msg.payload && (msg.payload.constructor == String)  )
+				    	msg.payload = JSON.parse(msg.payload);
+				    node.send(msg);
+				}
+				catch(e)
+				{
+					// report an unexpected error
+					node.error("Unexpected Error : " + e)
+			        node.status({fill:"red", shape: "dot", text: "Unexpected Error : " + e});
+				}
+				
+			};
+			
+			// handle the 'onerror' event
+			
+	       	node.es.onerror = function(err) {
+				if( err.type && (JSON.stringify(err.type) === '{}') )
+					return; // ignore
+	       		
+	       		node.warn('ERROR ' +	JSON.stringify(err));
+		        node.status({fill:"red", shape: "dot", text: 'CommunicationError ' + JSON.stringify(err)});
+				
+				
+				if ( err.status )
+				{
+					if ( (err.status == 503) || (err.status == "503") || (err.status == 404) || (err.status == "404") )
+						// the EventSource object has given up retrying ... retry reconnecting after 10 seconds
+						
+						node.es.close();
+						delete node.es;
+						
+				        node.status({fill:"red", shape: "dot", text: 'CommunicationStatus OFF'});
+
+						setTimeout(function() {
+							startEventSource();
+						}, 10000);
+				}
+				else if ( err.type && err.type.code )
+				{
+					// the EventSource object is retrying to reconnect
+				}
+				else
+				{
+					// no clue what the error situation is
+				}
+			  };
+
+		}
+		
+	    //startEventSource();
+		// give the system few seconds 
+		setTimeout(function() {
+			startEventSource();
+		}, 5000);
+
+		this.on("close", function() {
+			node.log('close');
+			node.es.close();
+	        node.status({fill:"red", shape: "dot", text: 'CommunicationStatus OFF'});
+
+		});
+
+	}
+	//
+	RED.nodes.registerType("openhab2-events", OpenHABEvents);
 } 

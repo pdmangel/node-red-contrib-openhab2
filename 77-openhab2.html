@@ -123,6 +123,17 @@
     </div>
 </script>
 
+<script type="text/x-red" data-template-name="openhab2-events">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-controller"><i class="fa fa-globe"></i> Controller</label>
+        <input type="text" id="node-input-controller">
+    </div>
+</script>
+
 <script type="text/x-red" data-help-name="openhab2-controller">
     <p>Configuration node for communication with an openHAB controller.</p>
 	<p></p>
@@ -249,6 +260,18 @@
         <li><code>msg.payload</code> optionally the fixed command or update value to send to the selected item</li>
    	 </ul>
 </script>
+
+<script type="text/x-red" data-help-name="openhab2-events">
+    <p>Watches the event bus.</p>
+	<p></p>
+	<b>Configuration</b>
+    <ul>
+        <li><b>Name :</b> Optionally specify a name</li>
+        <li><b>Controller :</b> Select the openHAB controller</li>
+   	 </ul>
+	<p></p>
+</script>
+
 
 <script type="text/javascript">
 	RED.nodes.registerType('openhab2-controller', {
@@ -419,3 +442,26 @@
         }
     });
 </script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('openhab2-events',{
+        category: 'home automation',
+        color: '#0fdd0f',
+        defaults: {
+            name:      {value:""},
+		    controller:  {value:"", type:"openhab2-controller", required:true},
+		    itemname:  {value:"", required:false},
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "node-red-contrib-openhab2.png",
+        label: function() {
+
+            return(this.name||this.itemname||"openhab2 events");
+        },
+        oneditprepare: function() {
+        	//openhabEditPrepare(this, true);
+        }
+    });
+</script>
+
