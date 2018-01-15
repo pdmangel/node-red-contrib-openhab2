@@ -540,7 +540,14 @@ module.exports = function(RED) {
 		
 		function startEventSource() {
 			
+			if ( openhabController == null )
+			{
+			node.error("Invalid controller");
+			return;
+			}
+			
 			// register for all item events
+			
 			
 			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=smarthome/*/*", {});
 			
