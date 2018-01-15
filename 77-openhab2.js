@@ -542,7 +542,7 @@ module.exports = function(RED) {
 			
 			// register for all item events
 			
-			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=smarthome/*", {});
+			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=smarthome/*/*", {});
 			
 			// handle the 'onopen' event
 			
