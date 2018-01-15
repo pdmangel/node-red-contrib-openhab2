@@ -145,13 +145,15 @@ module.exports = function(RED) {
 				    msg = JSON.parse(msg.data);
 				    msg.payload = JSON.parse(msg.payload);
 				    
-				    var item = msg.topic.substring(("smarthome/items/").length, msg.topic.lastIndexOf('/'));
+				    const itemStart = ("smarthome/items/").length;
+				    var item = msg.topic.substring(itemStart, msg.topic.indexOf('/',itemStart));
 				    
 				    node.emit(item + "/RawEvent", msg);
 				    node.emit("RawEvent", msg);
 				    
-				    if ( (msg.type == "ItemStateEvent") || (msg.type == "ItemStateChangedEvent") )
-						node.emit(item + "/StateEvent", {type: msg.type, state: msg.payload.value});
+				    if ( (msg.type == "ItemStateEvent") || (msg.type == "ItemStateChangedEvent") || (msg.type == "GroupItemStateChangedEvent"))
+				    	node.emit(item + "/StateEvent", {type: msg.type, state: msg.payload.value});
+
 				}
 				catch(e)
 				{
