@@ -284,7 +284,8 @@
 			path: {value:"",	required:false},
 		    username: {value:"", required:false},
 		    password:  {value:"", required:false}
-		},
+        },
+        paletteLabel: "openhab2-controller",
 		label: function() {
 			return this.name;
 		}
@@ -368,6 +369,7 @@
         inputs: 0,
         outputs: 2,
         icon: "node-red-contrib-openhab2.png",
+        paletteLabel: "openhab2-in",
         label: function() {
 
             return(this.name||this.itemname||"openhab2 in");
@@ -390,6 +392,7 @@
         inputs: 1,
         outputs: 1,
         icon: "node-red-contrib-openhab2.png",
+        paletteLabel: "openhab2-get",
         label: function() {
 
             return(this.name||this.itemname||"openhab2 get");
@@ -411,6 +414,7 @@
         inputs: 0,
         outputs: 3,
         icon: "node-red-contrib-openhab2.png",
+        paletteLabel: "openhab2-monitor",
         label: function() {
 
             return(this.name||"openhab2 monitor");
@@ -434,6 +438,7 @@
         inputs: 1,
         outputs: 0,
         icon: "node-red-contrib-openhab2.png",
+        paletteLabel: "openhab2-out",
         label: function() {
             return(this.name||this.itemname||"openhab2 out");
         },
@@ -455,6 +460,7 @@
         inputs: 0,
         outputs: 1,
         icon: "node-red-contrib-openhab2.png",
+        paletteLabel: "openhab2-events",
         label: function() {
 
             return(this.name||this.itemname||"openhab2 events");
