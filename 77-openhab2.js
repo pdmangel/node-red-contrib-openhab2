@@ -465,7 +465,8 @@ module.exports = function(RED) {
 				openhabController.control(item, topic, payload,
 									function(body){
 										// no body expected for a command or update
-	                					node.status({fill:"green", shape: "dot", text: " "});
+										node.status({fill:"green", shape: "dot", text: " "});
+										node.send(msg);
 									},
 									function(err) {
 	                					node.status({fill:"red", shape: "ring", text: err});
