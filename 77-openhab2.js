@@ -62,6 +62,19 @@ function getConnectionString(config) {
 
 module.exports = function(RED) {
 
+	/**
+	* ====== httpAdmin ================
+	* Enable controller route to static files
+	* ===========================================
+	*/
+	RED.httpAdmin.get('/static/*', function(req, res) {
+		var options = {
+		  root: __dirname + '/static/',
+		  dotfiles: 'deny'
+		};
+		res.sendFile(req.params[0], options);
+	  });
+
 	
 	/**
 	* ====== openhab2-controller ================

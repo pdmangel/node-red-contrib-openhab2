@@ -3,8 +3,9 @@
   "version": "1.1.3",
   "description": "openhab home automation for node-red",
   "dependencies": {
-	"request": "latest",
-	"@joeybaker/eventsource": "latest"
+    "@joeybaker/eventsource": "latest",
+    "bootstrap-multiselect": "^0.9.13-1",
+    "request": "latest"
   },
   "author": "Peter De Mangelaere <peter.demangelaere@gmail.com>",
   "keywords": [

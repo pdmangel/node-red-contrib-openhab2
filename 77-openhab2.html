@@ -53,6 +53,38 @@
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-in">
+    <style type="text/css">
+        .btn-group {
+            width: 70%;
+        }
+        .multiselect {
+            width: 100%;
+        }
+        .form-row input.multiselect-search {
+            width: 100%;
+        }
+        .multiselect-clear-filter {
+            display: none;
+        }
+        .dropdown-menu {
+            width: 100% !important;
+        }
+        .multiselect-container input[type="checkbox"] {
+            display: none;
+        }
+        .multiselect-container > li > a > label.radio {
+            margin: 5px;
+            width: 90%;
+            height: 100%;
+            cursor: pointer;
+            font-weight: 400;
+            padding: 3px 20px 3px 20px;
+        }        
+        .multiselect-container label.radio input[type="radio"] {
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="static/css/bootstrap-multiselect.css" type="text/css" />
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -63,12 +95,44 @@
     </div>
     <div class="form-row">
         <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
-    	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
+    	<select id="node-input-itemname" name="node-input-itemname">       
     	</select>
     </div>
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-get">
+    <style type="text/css">
+        .btn-group {
+            width: 70%;
+        }
+        .multiselect {
+            width: 100%;
+        }
+        .form-row input.multiselect-search {
+            width: 100%;
+        }
+        .multiselect-clear-filter {
+            display: none;
+        }
+        .dropdown-menu {
+            width: 100% !important;
+        }
+        .multiselect-container input[type="checkbox"] {
+            display: none;
+        }
+        .multiselect-container > li > a > label.radio {
+            margin: 5px;
+            width: 90%;
+            height: 100%;
+            cursor: pointer;
+            font-weight: 400;
+            padding: 3px 20px 3px 20px;
+        }        
+        .multiselect-container label.radio input[type="radio"] {
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="static/css/bootstrap-multiselect.css" type="text/css" />    
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -79,8 +143,8 @@
     </div>
     <div class="form-row">
         <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
-    	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
-    	</select>
+    	<select id="node-input-itemname" name="node-input-itemname">
+        </select>
     </div>
 </script>
 
@@ -96,6 +160,38 @@
 </script>
 
 <script type="text/x-red" data-template-name="openhab2-out">
+    <style type="text/css">
+        .btn-group {
+            width: 70%;
+        }
+        .multiselect {
+            width: 100%;
+        }
+        .form-row input.multiselect-search {
+            width: 100%;
+        }
+        .multiselect-clear-filter {
+            display: none;
+        }
+        .dropdown-menu {
+            width: 100% !important;
+        }
+        .multiselect-container input[type="checkbox"] {
+            display: none;
+        }
+        .multiselect-container > li > a > label.radio {
+            margin: 5px;
+            width: 90%;
+            height: 100%;
+            cursor: pointer;
+            font-weight: 400;
+            padding: 3px 20px 3px 20px;
+        }        
+        .multiselect-container label.radio input[type="radio"] {
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="static/css/bootstrap-multiselect.css" type="text/css" />
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -106,7 +202,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
-    	<select id="node-input-itemname" name="node-input-itemname" style="width: 250px;">
+    	<select id="node-input-itemname" name="node-input-itemname">
     	</select>
     </div>
     <div class="form-row">
@@ -302,7 +398,14 @@
 
     		var itemSelectionEl = $('#node-input-itemname');
 
-            itemSelectionEl.children().remove();
+            itemSelectionEl.multiselect({
+                enableFiltering: true,
+                enableCaseInsensitiveFiltering: true,
+                maxHeight: 300,
+                disableIfEmpty: true,
+                nonSelectedText: 'Select item...',
+                disabledText: 'No items found...'
+            });            
 
             if ( cntrlConfig ) {
             	var config = {
@@ -329,14 +432,15 @@
                     	 else
                     		 return 0;
                      });
-                     if ( allowEmpty )
-                    	 itemSelectionEl.append('<option value=""></option>');
-                     items.forEach(function(item) {
+                        if (allowEmpty)
+                            itemSelectionEl.append('<option value="">[No item]</option>');
+                        items.forEach(function (item) {
                     	 itemSelectionEl.append('<option>' + item.name + '</option>');
  							var it = itemSelectionEl.find('option').last();
  							it.attr('value', item.name);
                     		});
                      itemSelectionEl.val(itemName);
+                        itemSelectionEl.multiselect('rebuild');
                   })
                   .fail(function(e1, e2, e3) {
                       //itemSelectionEl.append('<option value="' + 1 + '">' + e1 + '</option>');
@@ -358,7 +462,8 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('openhab2-in',{
+    $.getScript('static/js/bootstrap-multiselect.js');
+    RED.nodes.registerType('openhab2-in', {
         category: 'home automation',
         color: '#00cc00',
         defaults: {
@@ -470,4 +575,4 @@
         }
     });
 </script>
-
+
