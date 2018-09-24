@@ -80,12 +80,15 @@ E.g. "ON", "OFF", "REFRESH", ...
 - Topic : Optionally select "ItemCommand" or "ItemUpdate". If specified, it overrides the topic specified in the incoming message. 
 - Payload : Optionally specify the command or update value to send to the selected item. If specified, it overrides the payload specified in the incoming message.
 
-
 *Messages accepted by NodeRED flows:*
 
 - <kbd>msg.item</kbd> : optionally the Item to address
 - <kbd>msg.topic</kbd> :  optionally "ItemCommand", "ItemUpdate"
 - <kbd>msg.payload</kbd> : optionally the fixed command or update value to send to the selected item
+
+*Messages injected in NodeRED flows (1 channel):*
+
+Channel 1: if output is successful, the input message is copied to this channel.
 
 ##### - openhab2-get
 
@@ -106,3 +109,13 @@ Channel 1:
 The input message with addition of :
 - <kbd>msg.payload</kbd> : the item object (name, label, state, ...)
 - <kbd>msg.payload_in</kbd> : copy of incoming message's payload
+
+## Release notes
+
+#### v1.1.4
+
+- *paletteLabel* defined for all nodes
+- *openhab2-out* now outputs the input message in case of success
+- Allow user to filter a long list of OpenHAB items by typing in (a part of) itemname. (Case-insensitive)
+
+

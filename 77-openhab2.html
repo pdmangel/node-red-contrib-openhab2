@@ -79,7 +79,7 @@
             cursor: pointer;
             font-weight: 400;
             padding: 3px 20px 3px 20px;
-        }        
+        }
         .multiselect-container label.radio input[type="radio"] {
             display: none;
         }
@@ -95,7 +95,7 @@
     </div>
     <div class="form-row">
         <label for="node-input-itemname"><i class="fa fa-crosshairs"></i> ItemName</label>
-    	<select id="node-input-itemname" name="node-input-itemname">       
+    	<select id="node-input-itemname" name="node-input-itemname">
     	</select>
     </div>
 </script>
@@ -127,12 +127,12 @@
             cursor: pointer;
             font-weight: 400;
             padding: 3px 20px 3px 20px;
-        }        
+        }
         .multiselect-container label.radio input[type="radio"] {
             display: none;
         }
     </style>
-    <link rel="stylesheet" href="static/css/bootstrap-multiselect.css" type="text/css" />    
+    <link rel="stylesheet" href="static/css/bootstrap-multiselect.css" type="text/css" />
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
@@ -186,7 +186,7 @@
             cursor: pointer;
             font-weight: 400;
             padding: 3px 20px 3px 20px;
-        }        
+        }
         .multiselect-container label.radio input[type="radio"] {
             display: none;
         }
@@ -355,6 +355,13 @@
         <li><code>msg.topic</code> optionally "ItemCommand", "ItemUpdate"</li>
         <li><code>msg.payload</code> optionally the fixed command or update value to send to the selected item</li>
    	 </ul>
+
+	<b>Messages injected in NodeRED flows (1 channels)</b>
+
+    <ul>
+        <li>Channel 1 : if successful, the input message is copied to this channel
+		</li>
+
 </script>
 
 <script type="text/x-red" data-help-name="openhab2-events">
@@ -391,7 +398,7 @@
 
 <script type="text/javascript">
 	// some code chared by openhab2-in and openhab2-out
-	
+
 	function openhabEditPrepare(node, allowEmpty) {
 
     	function updateOpenhabItemSelection(cntrlConfig, itemName) {
@@ -405,7 +412,7 @@
                 disableIfEmpty: true,
                 nonSelectedText: 'Select item...',
                 disabledText: 'No items found...'
-            });            
+            });
 
             if ( cntrlConfig ) {
             	var config = {
@@ -575,4 +582,4 @@
         }
     });
 </script>
-
+
