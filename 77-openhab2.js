@@ -32,11 +32,11 @@ function getConnectionString(config) {
 
 	if ( (config.username != undefined) && (config.username.trim().length != 0) )
 	{
-		url += config.username.trim();
+		url += encodeURIComponent(config.username.trim());
 
 		if ( (config.password != undefined) && (config.password.length != 0) )
 		{
-			url += ":" + config.password;
+			url += ":" + encodeURIComponent(config.password);
 		}
 		url += "@";
 	}
