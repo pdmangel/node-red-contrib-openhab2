@@ -138,7 +138,7 @@ module.exports = function(RED) {
 
 			// register for all item events
 
-			node.es= new EventSource(getConnectionString(config) + "/rest/events?topics=smarthome/items", {});
+			node.es= new EventSource(getConnectionString(config) + "/rest/events?topics=openhab/items", {});
 
 			// handle the 'onopen' event
 
@@ -158,7 +158,7 @@ module.exports = function(RED) {
 				    msg = JSON.parse(msg.data);
 				    msg.payload = JSON.parse(msg.payload);
 
-				    const itemStart = ("smarthome/items/").length;
+				    const itemStart = ("openhab/items/").length;
 				    var item = msg.topic.substring(itemStart, msg.topic.indexOf('/',itemStart));
 
 				    node.emit(item + "/RawEvent", msg);
@@ -224,11 +224,13 @@ module.exports = function(RED) {
             if ( topic === "ItemUpdate" )
             {
             	url = getConnectionString(config) + "/rest/items/" + itemname + "/state";
+				headers = {"Content-type":"text/plain"};
             	method = request.put;
             }
             else if ( topic === "ItemCommand" )
             {
             	url = getConnectionString(config) + "/rest/items/" + itemname;
+				headers = {"Content-type":"text/plain"};
             	method = request.post;
             }
             else
@@ -237,7 +239,7 @@ module.exports = function(RED) {
             	method = request.get;
             }
 
-			method({url: url, body: String(payload)}, function(error, response, body) {
+			method({url: url, body: String(payload), headers: headers}, function(error, response, body) {
         		if ( error )
         		{
 					node.emit('CommunicationError', error);
@@ -563,7 +565,7 @@ module.exports = function(RED) {
 			// register for all item events
 
 
-			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=smarthome/*/*", {});
+			node.es = new EventSource(getConnectionString(openhabController.getConfig()) + "/rest/events?topics=openhab/*/*", {});
 
 			// handle the 'onopen' event
 

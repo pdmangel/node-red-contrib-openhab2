@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-openhab2",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "openhab home automation for node-red",
   "dependencies": {
     "@joeybaker/eventsource": "latest",
@@ -9,15 +9,15 @@
   },
   "author": "Peter De Mangelaere <peter.demangelaere@gmail.com>",
   "keywords": [
-    "node-red", "openhab2"
+    "node-red",
+    "openhab2"
   ],
   "node-red": {
     "nodes": {
       "openhab2": "77-openhab2.js"
     }
   },
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/pdmangel/node-red-contrib-openhab2.git"
