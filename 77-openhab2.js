@@ -236,6 +236,7 @@ module.exports = function(RED) {
             else
             {
             	url = getConnectionString(config) + "/rest/items/" + itemname;
+		    		headers = {};
             	method = request.get;
             }
 
